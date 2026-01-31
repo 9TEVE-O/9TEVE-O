@@ -11,7 +11,7 @@ Hi there. I am Subzteveø
 
 ## Project highlights
 
-### Able to Answer — Ableton Offline Copilot
+### Ableto — Ableton Offline Copilot
 Local-first AI assistant for music production.
 - Offline inference, privacy-first  
 - Audio/MIDI analysis for mixing, mastering, and arrangement  
