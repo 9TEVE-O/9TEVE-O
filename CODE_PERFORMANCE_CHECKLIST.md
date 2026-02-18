@@ -40,7 +40,7 @@ Use this checklist when reviewing code for performance issues.
 - [ ] List creation when generator would work? (Memory efficiency)
 - [ ] Regular loops instead of list comprehensions?
 - [ ] Global variable lookups in hot loops? (Cache as local)
-- [ ] Function calls in loop conditions? (Evaluate once before loop)
+- [ ] Index-based loops where direct iteration (`for x in items`) would be simpler/faster?
 
 ### Built-in Usage
 - [ ] Manual implementations instead of built-ins? (sum, min, max, any, all)
@@ -62,9 +62,13 @@ total = sum(values)
 for i in range(n):
     result = math.sqrt(i)  # math looked up each iteration
 
-# ❌ Function call in condition
-for i in range(len(items)):  # len() called every iteration
+# ❌ Index-based loop when index is not needed
+for i in range(len(items)):
     process(items[i])
+
+# ✅ Direct iteration
+for item in items:
+    process(item)
 ```
 
 ---
@@ -247,9 +251,15 @@ for url in urls:
 
 ### Examples to Catch
 ```python
-# ❌ Regex compilation in loop
+# ❌ Dynamic regex compilation in loop
 for text in texts:
-    matches = re.findall(r'\b\w+\b', text)  # Pattern compiled each time
+    pattern = re.compile(build_pattern(config))
+    matches = pattern.findall(text)
+
+# ✅ Compile once and reuse
+pattern = re.compile(build_pattern(config))
+for text in texts:
+    matches = pattern.findall(text)
 
 # ❌ Sequential document processing
 docs = [nlp(text) for text in texts]  # No batching
