@@ -28,6 +28,9 @@ High-quality code requires high performance. These guides help identify and fix 
 - NLP and document processing efficiency
 
 ✅ **[Code Performance Checklist](CODE_PERFORMANCE_CHECKLIST.md)** - Quick reference for code reviews:
+
+🧪 **[Performance Review Report](PERFORMANCE_REVIEW_REPORT.md)** - Prioritized bottlenecks and refactor proposals with before/after examples.
+
 - Common performance anti-patterns to avoid
 - Language-specific issues to catch
 - Database and query optimization

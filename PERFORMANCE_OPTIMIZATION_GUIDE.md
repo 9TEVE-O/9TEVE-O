@@ -19,6 +19,21 @@ A comprehensive guide for identifying and improving slow or inefficient code, wi
 ### Identify Bottlenecks First
 Before optimizing, always measure and identify actual bottlenecks.
 
+### Prioritize by Impact, Not Preference
+Use a simple score to rank optimization opportunities before implementation.
+
+```python
+# frequency: calls per request or per day
+# latency_ms: current cost per call
+# memory_mb: expected average memory reduction
+# effort_days: estimated implementation effort
+score = (frequency * latency_ms + 50 * memory_mb) / max(effort_days, 0.5)
+
+# Higher score = higher priority
+```
+
+This helps teams avoid low-value micro-optimizations and focus on improvements that affect user-visible SLAs.
+
 #### Python Profiling Tools
 ```python
 # cProfile - Standard profiler
