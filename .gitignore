@@ -54,6 +54,9 @@ temp/
 *.tmp
 *.bak
 
+# SQLite databases
+*.sqlite3
+
 # Node.js (if applicable)
 node_modules/
 package-lock.json
