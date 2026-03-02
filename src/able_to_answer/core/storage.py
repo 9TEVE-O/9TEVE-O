@@ -190,3 +190,11 @@ class SqliteStore:
                 (audit_id,),
             ).fetchone()
         return row
+
+    def list_audits(self, *, limit: int = 100, offset: int = 0) -> list[sqlite3.Row]:
+        with self._connect() as con:
+            rows = con.execute(
+                "SELECT id, created_at, document_id, question FROM audits ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                (limit, offset),
+            ).fetchall()
+        return rows

@@ -145,3 +145,77 @@ def test_get_audit_not_found(client):
     resp = client.get("/audits/audit_doesnotexist")
     assert resp.status_code == 404
     assert resp.json()["error"] == "audit_not_found"
+
+
+def test_get_document_by_id(client):
+    ingest_resp = client.post(
+        "/ingest/text",
+        json={"source_name": "get-doc-test", "text": "Some test document content."},
+    )
+    doc_id = ingest_resp.json()["document_id"]
+
+    resp = client.get(f"/documents/{doc_id}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["document_id"] == doc_id
+    assert data["source_name"] == "get-doc-test"
+    assert data["text_len"] > 0
+    assert len(data["sha256"]) == 64
+
+
+def test_get_document_not_found(client):
+    resp = client.get("/documents/doc_doesnotexist")
+    assert resp.status_code == 404
+    assert resp.json()["error"] == "document_not_found"
+
+
+def test_list_audits_empty(client):
+    resp = client.get("/audits")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+def test_list_audits(client):
+    ingest_resp = client.post(
+        "/ingest/text",
+        json={"source_name": "audit-list-test", "text": "Governance audit list test document."},
+    )
+    doc_id = ingest_resp.json()["document_id"]
+    ask_resp = client.post("/ask", json={"document_id": doc_id, "question": "What is this about?"})
+    assert ask_resp.status_code == 200
+
+    resp = client.get("/audits")
+    assert resp.status_code == 200
+    audits = resp.json()
+    assert len(audits) == 1
+    a = audits[0]
+    assert a["audit_id"].startswith("audit_")
+    assert a["document_id"] == doc_id
+    assert a["question"] == "What is this about?"
+    # list endpoint must NOT expose answer/citations/pack
+    assert "answer" not in a
+    assert "citations" not in a
+    assert "audit_pack" not in a
+
+
+def test_list_audits_pagination(client):
+    ingest_resp = client.post(
+        "/ingest/text",
+        json={"source_name": "pagination-test", "text": "Document for pagination testing."},
+    )
+    doc_id = ingest_resp.json()["document_id"]
+    for i in range(3):
+        ask_resp = client.post("/ask", json={"document_id": doc_id, "question": f"Question {i}?"})
+        assert ask_resp.status_code == 200
+
+    all_resp = client.get("/audits?limit=3&offset=0")
+    assert all_resp.status_code == 200
+    assert len(all_resp.json()) == 3
+
+    paged_resp = client.get("/audits?limit=2&offset=0")
+    assert paged_resp.status_code == 200
+    assert len(paged_resp.json()) == 2
+
+    offset_resp = client.get("/audits?limit=10&offset=2")
+    assert offset_resp.status_code == 200
+    assert len(offset_resp.json()) == 1

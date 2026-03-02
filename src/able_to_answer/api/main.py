@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import asdict
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.responses import JSONResponse
 
 from able_to_answer.core.config import settings
@@ -16,6 +16,7 @@ from able_to_answer.api.models import (
     AskRequest,
     AskResponse,
     AuditResponse,
+    AuditSummary,
     DocumentSummary,
     IngestResponse,
     IngestTextRequest,
@@ -157,3 +158,34 @@ def get_audit(audit_id: str):
         citations=json.loads(row["citations_json"]),
         audit_pack=json.loads(row["pack_json"]),
     )
+
+
+@app.get("/documents/{document_id}", response_model=DocumentSummary)
+def get_document(document_id: str):
+    row = store.get_document(document_id=document_id)
+    if not row:
+        return JSONResponse(status_code=404, content={"error": "document_not_found"})
+    return DocumentSummary(
+        document_id=row["id"],
+        source_name=row["source_name"],
+        created_at=row["created_at"],
+        sha256=row["sha256"],
+        text_len=row["text_len"],
+    )
+
+
+@app.get("/audits", response_model=list[AuditSummary])
+def list_audits(
+    limit: int = Query(default=100, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
+):
+    rows = store.list_audits(limit=limit, offset=offset)
+    return [
+        AuditSummary(
+            audit_id=r["id"],
+            created_at=r["created_at"],
+            document_id=r["document_id"],
+            question=r["question"],
+        )
+        for r in rows
+    ]
