@@ -145,3 +145,55 @@ def test_get_audit_not_found(client):
     resp = client.get("/audits/audit_doesnotexist")
     assert resp.status_code == 404
     assert resp.json()["error"] == "audit_not_found"
+
+
+def test_get_document(client):
+    ingest_resp = client.post(
+        "/ingest/text",
+        json={"source_name": "doc-read-test", "text": "Compliance framework documentation."},
+    )
+    doc_id = ingest_resp.json()["document_id"]
+
+    resp = client.get(f"/documents/{doc_id}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["document_id"] == doc_id
+    assert data["source_name"] == "doc-read-test"
+    assert data["text_len"] > 0
+    assert len(data["sha256"]) == 64
+    assert "created_at" in data
+
+
+def test_get_document_not_found(client):
+    resp = client.get("/documents/doc_doesnotexist")
+    assert resp.status_code == 404
+    assert resp.json()["error"] == "document_not_found"
+
+
+def test_list_audits_empty(client):
+    resp = client.get("/audits")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+def test_list_audits(client):
+    ingest_resp = client.post(
+        "/ingest/text",
+        json={"source_name": "audit-list-test", "text": "Council compliance and governance policy."},
+    )
+    doc_id = ingest_resp.json()["document_id"]
+    ask_resp = client.post(
+        "/ask",
+        json={"document_id": doc_id, "question": "What is the governance policy?"},
+    )
+    assert ask_resp.status_code == 200
+    audit_id = ask_resp.json()["audit_id"]
+
+    resp = client.get("/audits")
+    assert resp.status_code == 200
+    audits = resp.json()
+    assert len(audits) == 1
+    assert audits[0]["audit_id"] == audit_id
+    assert audits[0]["document_id"] == doc_id
+    assert audits[0]["question"] == "What is the governance policy?"
+    assert "created_at" in audits[0]
