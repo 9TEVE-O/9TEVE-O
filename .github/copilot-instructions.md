@@ -43,7 +43,7 @@ tests/
 - No `print()` in application code — use `logger` from `able_to_answer.core.logging`
 - Do not import `os.environ` directly in modules other than `core/config.py`
 - Do not commit `.env` files (use `.env.example` with placeholder values)
-- Do not use `INSERT OR REPLACE` when idempotency is not explicitly required
+- Do not use `INSERT OR REPLACE` except in explicitly idempotent write paths (for example, `SqliteStore.insert_chunks()` and `SqliteStore.insert_audit()`)
 - Do not mix sync and async FastAPI route handlers without good reason
 
 ## Test requirements
