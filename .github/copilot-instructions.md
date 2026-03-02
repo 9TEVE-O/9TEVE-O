@@ -9,7 +9,7 @@ trail — all without an external LLM call in the MVP.
 - **Language:** Python ≥ 3.11 (CI tests on 3.12)
 - **Framework:** FastAPI (ASGI, served via Uvicorn)
 - **Storage:** SQLite via the built-in `sqlite3` module (no ORM)
-- **Testing:** pytest + httpx `TestClient`
+- **Testing:** pytest + `fastapi.testclient.TestClient` (httpx-based)
 - **Build/package:** setuptools + pyproject.toml (PEP 517/518)
 
 ## Folder structure
