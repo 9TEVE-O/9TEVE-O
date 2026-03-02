@@ -190,3 +190,10 @@ class SqliteStore:
                 (audit_id,),
             ).fetchone()
         return row
+
+    def list_audits(self) -> list[sqlite3.Row]:
+        with self._connect() as con:
+            rows = con.execute(
+                "SELECT * FROM audits ORDER BY created_at DESC",
+            ).fetchall()
+        return rows
