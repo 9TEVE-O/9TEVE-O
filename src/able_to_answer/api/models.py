@@ -27,3 +27,21 @@ class AskResponse(BaseModel):
     citations: list[dict]
     audit_id: str
     audit_pack: dict
+
+
+class DocumentSummary(BaseModel):
+    document_id: str
+    source_name: str | None
+    created_at: int
+    sha256: str
+    text_len: int
+
+
+class AuditResponse(BaseModel):
+    audit_id: str
+    created_at: int
+    document_id: str
+    question: str
+    answer: str
+    citations: list[dict]
+    audit_pack: dict

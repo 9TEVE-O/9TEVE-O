@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import asdict
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -14,6 +15,8 @@ from able_to_answer.audit.service import build_audit_pack
 from able_to_answer.api.models import (
     AskRequest,
     AskResponse,
+    AuditResponse,
+    DocumentSummary,
     IngestResponse,
     IngestTextRequest,
 )
@@ -122,4 +125,35 @@ def ask(req: AskRequest):
         citations=cited_dicts,
         audit_id=audit_id,
         audit_pack=pack,
+    )
+
+
+@app.get("/documents", response_model=list[DocumentSummary])
+def list_documents():
+    rows = store.list_documents()
+    return [
+        DocumentSummary(
+            document_id=r["id"],
+            source_name=r["source_name"],
+            created_at=r["created_at"],
+            sha256=r["sha256"],
+            text_len=r["text_len"],
+        )
+        for r in rows
+    ]
+
+
+@app.get("/audits/{audit_id}", response_model=AuditResponse)
+def get_audit(audit_id: str):
+    row = store.get_audit(audit_id=audit_id)
+    if not row:
+        return JSONResponse(status_code=404, content={"error": "audit_not_found"})
+    return AuditResponse(
+        audit_id=row["id"],
+        created_at=row["created_at"],
+        document_id=row["document_id"],
+        question=row["question"],
+        answer=row["answer"],
+        citations=json.loads(row["citations_json"]),
+        audit_pack=json.loads(row["pack_json"]),
     )
