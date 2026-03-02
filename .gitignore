@@ -26,6 +26,11 @@ htmlcov/
 *.prof
 *.stats
 
+# Environment files
+.env
+.env.local
+.env.*.local
+
 # Virtual Environments
 venv/
 env/
