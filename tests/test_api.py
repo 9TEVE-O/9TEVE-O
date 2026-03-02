@@ -92,3 +92,56 @@ def test_ingest_file(client):
     assert resp.status_code == 200
     data = resp.json()
     assert data["document_id"].startswith("doc_")
+
+
+def test_list_documents_empty(client):
+    resp = client.get("/documents")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+def test_list_documents(client):
+    client.post(
+        "/ingest/text",
+        json={"source_name": "list-test", "text": "Document listing test content."},
+    )
+    resp = client.get("/documents")
+    assert resp.status_code == 200
+    docs = resp.json()
+    assert len(docs) == 1
+    doc = docs[0]
+    assert doc["document_id"].startswith("doc_")
+    assert doc["source_name"] == "list-test"
+    assert doc["text_len"] > 0
+    assert len(doc["sha256"]) == 64
+
+
+def test_get_audit(client):
+    # Ingest + ask to create an audit record
+    ingest_resp = client.post(
+        "/ingest/text",
+        json={"source_name": "audit-read-test", "text": "Compliance framework documentation."},
+    )
+    doc_id = ingest_resp.json()["document_id"]
+    ask_resp = client.post(
+        "/ask",
+        json={"document_id": doc_id, "question": "What is the compliance framework?"},
+    )
+    audit_id = ask_resp.json()["audit_id"]
+
+    # Retrieve the audit record
+    resp = client.get(f"/audits/{audit_id}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["audit_id"] == audit_id
+    assert data["document_id"] == doc_id
+    assert data["question"] == "What is the compliance framework?"
+    assert data["answer"]
+    assert isinstance(data["citations"], list)
+    assert "created_at" in data["audit_pack"]
+
+
+def test_get_audit_not_found(client):
+    resp = client.get("/audits/audit_doesnotexist")
+    assert resp.status_code == 404
+    assert resp.json()["error"] == "audit_not_found"

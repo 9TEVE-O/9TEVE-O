@@ -147,6 +147,13 @@ class SqliteStore:
             ).fetchone()
         return row
 
+    def list_documents(self) -> list[sqlite3.Row]:
+        with self._connect() as con:
+            rows = con.execute(
+                "SELECT * FROM documents ORDER BY created_at DESC",
+            ).fetchall()
+        return rows
+
     # -------- Audit --------
     def insert_audit(
         self,
@@ -175,3 +182,11 @@ class SqliteStore:
             con.commit()
 
         return audit_id
+
+    def get_audit(self, *, audit_id: str) -> sqlite3.Row | None:
+        with self._connect() as con:
+            row = con.execute(
+                "SELECT * FROM audits WHERE id = ?",
+                (audit_id,),
+            ).fetchone()
+        return row
