@@ -37,6 +37,13 @@ class DocumentSummary(BaseModel):
     text_len: int
 
 
+class AuditSummary(BaseModel):
+    audit_id: str
+    created_at: int
+    document_id: str
+    question: str
+
+
 class AuditResponse(BaseModel):
     audit_id: str
     created_at: int
