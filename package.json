@@ -1,8 +1,0 @@
-{
-  "name": "9teve-o",
-  "version": "1.0.0",
-  "description": "Profile repository for 9TEVE-O",
-  "dependencies": {
-    "@github/copilot": "^0.0.420"
-  }
-}
