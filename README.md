@@ -60,6 +60,46 @@ Copy `.env.example` to `.env` and adjust values as needed.
 | `ATA_MAX_CONTEXT_CHUNKS` | `6` | Maximum chunks retrieved per query |
 | `ATA_MAX_ANSWER_CHARS` | `1800` | Maximum characters in the extractive answer |
 
+### GitHub Copilot CLI
+
+[GitHub Copilot CLI](https://github.com/github/copilot-cli) brings AI-powered coding assistance directly to your terminal, making it easy to explore, edit, and debug this codebase without leaving the command line.
+
+#### Install
+
+```bash
+# macOS / Linux (review the script at https://gh.io/copilot-install before running)
+curl -fsSL https://gh.io/copilot-install | bash
+
+# macOS (Homebrew)
+brew install copilot-cli
+
+# Windows (WinGet)
+winget install GitHub.Copilot
+
+# npm (all platforms)
+npm install -g @github/copilot
+```
+
+#### Launch
+
+```bash
+copilot
+```
+
+On first launch you will be prompted to authenticate with your GitHub account (requires an active Copilot subscription). You can also authenticate with a fine-grained Personal Access Token that has the **Copilot Requests** permission set via the `GH_TOKEN` or `GITHUB_TOKEN` environment variable.
+
+#### Useful workflows for this project
+
+| Goal | Example prompt |
+|---|---|
+| Understand the ingestion pipeline | `Explain how text is chunked and stored in able_to_answer/ingestion/` |
+| Add a new API route | `Add a DELETE /documents/{id} route following the existing patterns in api/main.py` |
+| Run and interpret tests | `Run the test suite and explain any failures` |
+| Explore retrieval scoring | `How does the lexical overlap scorer in retrieval/ rank chunks?` |
+| Debug a failing audit | `Why might build_audit_pack return an empty citations list?` |
+
+Launch `copilot` from the repository root so the agent has full access to the source tree. Use `/model` to switch between available models and `/feedback` to submit feedback to the Copilot CLI team.
+
 ### How to contribute
 
 1. Fork the repo and create a branch: `git checkout -b your-feature`
