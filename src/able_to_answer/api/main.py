@@ -16,6 +16,7 @@ from able_to_answer.api.models import (
     AskRequest,
     AskResponse,
     AuditResponse,
+    AuditSummary,
     DocumentSummary,
     IngestResponse,
     IngestTextRequest,
@@ -138,6 +139,34 @@ def list_documents():
             created_at=r["created_at"],
             sha256=r["sha256"],
             text_len=r["text_len"],
+        )
+        for r in rows
+    ]
+
+
+@app.get("/documents/{document_id}", response_model=DocumentSummary)
+def get_document(document_id: str):
+    row = store.get_document(document_id=document_id)
+    if not row:
+        return JSONResponse(status_code=404, content={"error": "document_not_found"})
+    return DocumentSummary(
+        document_id=row["id"],
+        source_name=row["source_name"],
+        created_at=row["created_at"],
+        sha256=row["sha256"],
+        text_len=row["text_len"],
+    )
+
+
+@app.get("/audits", response_model=list[AuditSummary])
+def list_audits():
+    rows = store.list_audits()
+    return [
+        AuditSummary(
+            audit_id=r["id"],
+            created_at=r["created_at"],
+            document_id=r["document_id"],
+            question=r["question"],
         )
         for r in rows
     ]
