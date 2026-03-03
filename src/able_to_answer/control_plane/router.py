@@ -89,8 +89,11 @@ def cancel_run(run_id: str) -> dict:
 
 
 @router.post("/runs/{run_id}/approve", status_code=200)
-def approve_run(run_id: str, req: ApproveRequest | None = None) -> dict:
-    """Approve all tasks currently in *awaiting_approval* state for this run."""
+def approve_run(run_id: str, req: ApproveRequest) -> dict:
+    """Approve all tasks currently in *awaiting_approval* state for this run.
+
+    ``req.approved_by`` should identify the human approver for the audit log.
+    """
     row = cp_store.get_run(run_id=run_id)
     if not row:
         raise HTTPException(status_code=404, detail="run_not_found")
@@ -99,7 +102,7 @@ def approve_run(run_id: str, req: ApproveRequest | None = None) -> dict:
     for task in tasks:
         cp_store.update_task_status(task_id=task["id"], status="dispatched")
 
-    approved_by = (req.approved_by if req else None)
+    approved_by = req.approved_by
     logger.info(
         "control_plane: run_approved run=%s approved_tasks=%d approved_by=%s",
         run_id,
