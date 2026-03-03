@@ -42,6 +42,17 @@ CREATE TABLE IF NOT EXISTS audits (
   pack_json TEXT NOT NULL,
   FOREIGN KEY(document_id) REFERENCES documents(id)
 );
+
+CREATE TABLE IF NOT EXISTS feedback (
+  id TEXT PRIMARY KEY,
+  created_at INTEGER NOT NULL,
+  audit_id TEXT NOT NULL,
+  rating INTEGER NOT NULL,
+  comment TEXT,
+  FOREIGN KEY(audit_id) REFERENCES audits(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_feedback_audit ON feedback(audit_id);
 """
 
 
@@ -195,5 +206,43 @@ class SqliteStore:
         with self._connect() as con:
             rows = con.execute(
                 "SELECT * FROM audits ORDER BY created_at DESC",
+            ).fetchall()
+        return rows
+
+    # -------- Feedback --------
+    def insert_feedback(
+        self,
+        *,
+        audit_id: str,
+        rating: int,
+        comment: str | None,
+    ) -> str:
+        payload = f"{audit_id}:{rating}:{comment}:{_now_ts()}"
+        feedback_id = _make_id("fb", payload)
+
+        with self._connect() as con:
+            con.execute(
+                """
+                INSERT INTO feedback (id, created_at, audit_id, rating, comment)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (feedback_id, _now_ts(), audit_id, rating, comment),
+            )
+            con.commit()
+
+        return feedback_id
+
+    def get_feedback(self, *, feedback_id: str) -> sqlite3.Row | None:
+        with self._connect() as con:
+            row = con.execute(
+                "SELECT * FROM feedback WHERE id = ?",
+                (feedback_id,),
+            ).fetchone()
+        return row
+
+    def list_feedback(self) -> list[sqlite3.Row]:
+        with self._connect() as con:
+            rows = con.execute(
+                "SELECT * FROM feedback ORDER BY created_at DESC",
             ).fetchall()
         return rows
