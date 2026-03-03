@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://9teve-os.example.com/schemas/policy-schema.json",
+  "title": "PolicyProfile",
+  "description": "Schema for a 9TEVE-OS Control Plane policy profile. Profiles define which actions require approval and which are denied outright.",
+  "type": "object",
+  "required": ["profile_id", "description", "side_effect_actions", "deny_action_types", "require_approval_for", "default_decision"],
+  "additionalProperties": false,
+  "properties": {
+    "profile_id": {
+      "type": "string",
+      "description": "Unique identifier for the policy profile.",
+      "examples": ["default", "strict", "permissive"]
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of what this profile enforces."
+    },
+    "side_effect_actions": {
+      "type": "array",
+      "description": "Exhaustive list of action types considered side-effects (have external impact).",
+      "items": { "type": "string" },
+      "examples": [["GIT_PUSH", "DEPLOY", "SECRET_ACCESS", "OUTBOUND_NETWORK", "PUBLISH_DOCS"]]
+    },
+    "deny_action_types": {
+      "type": "array",
+      "description": "Action types that are always denied by this profile, regardless of context.",
+      "items": { "type": "string" }
+    },
+    "require_approval_for": {
+      "type": "array",
+      "description": "Action types that must receive explicit human approval before proceeding.",
+      "items": { "type": "string" }
+    },
+    "default_decision": {
+      "type": "string",
+      "enum": ["allow", "deny", "pending_approval"],
+      "description": "Decision applied to actions not listed in deny_action_types or require_approval_for."
+    }
+  },
+  "examples": [
+    {
+      "profile_id": "default",
+      "description": "Require human approval for side-effect actions; allow all others.",
+      "side_effect_actions": ["DEPLOY", "GIT_PUSH", "OUTBOUND_NETWORK", "PUBLISH_DOCS", "SECRET_ACCESS"],
+      "deny_action_types": [],
+      "require_approval_for": ["DEPLOY", "GIT_PUSH", "OUTBOUND_NETWORK", "PUBLISH_DOCS", "SECRET_ACCESS"],
+      "default_decision": "allow"
+    },
+    {
+      "profile_id": "strict",
+      "description": "Deny all side-effect actions; allow all others.",
+      "side_effect_actions": ["DEPLOY", "GIT_PUSH", "OUTBOUND_NETWORK", "PUBLISH_DOCS", "SECRET_ACCESS"],
+      "deny_action_types": ["DEPLOY", "GIT_PUSH", "OUTBOUND_NETWORK", "PUBLISH_DOCS", "SECRET_ACCESS"],
+      "require_approval_for": [],
+      "default_decision": "allow"
+    },
+    {
+      "profile_id": "permissive",
+      "description": "Allow all actions without requiring approval.",
+      "side_effect_actions": ["DEPLOY", "GIT_PUSH", "OUTBOUND_NETWORK", "PUBLISH_DOCS", "SECRET_ACCESS"],
+      "deny_action_types": [],
+      "require_approval_for": [],
+      "default_decision": "allow"
+    }
+  ]
+}

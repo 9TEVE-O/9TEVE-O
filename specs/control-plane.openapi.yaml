@@ -1,0 +1,609 @@
+openapi: "3.1.0"
+info:
+  title: "9TEVE-OS Control Plane API"
+  description: |
+    Single control plane for driving agents (SWE-AF / OpenHands), workflows
+    (n8n / Prefect), memory (Mem0), governance, and secrets (Vault) with
+    consistent identity, telemetry, and policy enforcement.
+  version: "1.0.0"
+  contact:
+    name: "9TEVE-O Engineering"
+
+servers:
+  - url: "https://api.9teve-os.example.com/v1"
+    description: "Production"
+  - url: "http://localhost:8000/v1"
+    description: "Local development"
+
+tags:
+  - name: runs
+    description: Run lifecycle — create, inspect, cancel, approve gated steps
+  - name: tasks
+    description: Task scheduling — create, dispatch (policy-gated), complete
+  - name: artifacts
+    description: Immutable artefacts produced by a run
+  - name: policy
+    description: Policy profile lookup and dry-run evaluation
+
+paths:
+  # ──────────────────────────────────────────────────────
+  # Runs
+  # ──────────────────────────────────────────────────────
+  /runs:
+    post:
+      operationId: createRun
+      summary: Create a new run
+      tags: [runs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRunRequest"
+      responses:
+        "201":
+          description: Run created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  run_id:
+                    type: string
+                    example: "run_a1b2c3d4e5f6a7b8"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /runs/{run_id}:
+    get:
+      operationId: getRun
+      summary: Get run status and metadata
+      tags: [runs]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: Run details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /runs/{run_id}/cancel:
+    post:
+      operationId: cancelRun
+      summary: Cancel a run that is not yet in a terminal state
+      tags: [runs]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: Run cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  run_id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [cancelled]
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /runs/{run_id}/approve:
+    post:
+      operationId: approveRun
+      summary: Approve all tasks currently awaiting human approval in a run
+      tags: [runs]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApproveRequest"
+      responses:
+        "200":
+          description: Approval recorded; count of promoted tasks returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  run_id:
+                    type: string
+                  approved_tasks:
+                    type: integer
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ──────────────────────────────────────────────────────
+  # Tasks
+  # ──────────────────────────────────────────────────────
+  /runs/{run_id}/tasks:
+    post:
+      operationId: createTask
+      summary: Create a new task within a run
+      tags: [tasks]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskRequest"
+      responses:
+        "201":
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    get:
+      operationId: listTasks
+      summary: List all tasks for a run
+      tags: [tasks]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: Task list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TaskResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /tasks/{task_id}/dispatch:
+    post:
+      operationId: dispatchTask
+      summary: Dispatch a pending task (runs policy gate)
+      description: |
+        Evaluates the action envelope against the run's policy profile.
+        - `allow` → task transitions to `dispatched`
+        - `pending_approval` → task transitions to `awaiting_approval`
+        - `deny` → 403 Forbidden
+      tags: [tasks]
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DispatchTaskRequest"
+      responses:
+        "200":
+          description: Dispatch result including policy decision
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task_id:
+                    type: string
+                  status:
+                    $ref: "#/components/schemas/TaskStatus"
+                  policy_decision:
+                    $ref: "#/components/schemas/PolicyDecision"
+                  reason:
+                    type: string
+        "403":
+          description: Action denied by policy
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /tasks/{task_id}/complete:
+    post:
+      operationId: completeTask
+      summary: Mark a dispatched task as completed or failed
+      tags: [tasks]
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteTaskRequest"
+      responses:
+        "200":
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task_id:
+                    type: string
+                  status:
+                    $ref: "#/components/schemas/TaskStatus"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  # ──────────────────────────────────────────────────────
+  # Artifacts
+  # ──────────────────────────────────────────────────────
+  /runs/{run_id}/artifacts:
+    get:
+      operationId: listArtifacts
+      summary: List artifacts produced by a run
+      tags: [artifacts]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: Artifact list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ArtifactResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /artifacts/{artifact_id}:
+    get:
+      operationId: getArtifact
+      summary: Retrieve an artifact with its full content
+      tags: [artifacts]
+      parameters:
+        - $ref: "#/components/parameters/ArtifactId"
+      responses:
+        "200":
+          description: Artifact detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArtifactDetailResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ──────────────────────────────────────────────────────
+  # Policy
+  # ──────────────────────────────────────────────────────
+  /policies/{policy_profile_id}:
+    get:
+      operationId: getPolicyProfile
+      summary: Retrieve a policy profile definition
+      tags: [policy]
+      parameters:
+        - name: policy_profile_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+      responses:
+        "200":
+          description: Policy profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyProfile"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /policies/evaluate:
+    post:
+      operationId: evaluatePolicy
+      summary: Dry-run policy evaluation — does not change state
+      tags: [policy]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PolicyEvaluateRequest"
+      responses:
+        "200":
+          description: Policy evaluation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyEvaluateResponse"
+
+components:
+  parameters:
+    RunId:
+      name: run_id
+      in: path
+      required: true
+      schema:
+        type: string
+    TaskId:
+      name: task_id
+      in: path
+      required: true
+      schema:
+        type: string
+    ArtifactId:
+      name: artifact_id
+      in: path
+      required: true
+      schema:
+        type: string
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+    Conflict:
+      description: State conflict (terminal state or already dispatched)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+    ValidationError:
+      description: Request validation error
+      content:
+        application/json:
+          schema:
+            type: object
+
+  schemas:
+    RunStatus:
+      type: string
+      enum: [pending, running, completed, failed, cancelled]
+
+    TaskStatus:
+      type: string
+      enum: [pending, dispatched, awaiting_approval, completed, failed]
+
+    PolicyDecision:
+      type: string
+      enum: [allow, deny, pending_approval]
+
+    Budget:
+      type: object
+      properties:
+        tokens:
+          type: integer
+          description: Maximum token budget
+          nullable: true
+        time_s:
+          type: integer
+          description: Maximum wall-clock time in seconds
+          nullable: true
+
+    Actor:
+      type: object
+      required: [agent_id, role]
+      properties:
+        agent_id:
+          type: string
+        role:
+          type: string
+          enum: [planner, coder, reviewer, qa]
+
+    RequestedAction:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          description: "Action type: GIT_COMMIT, GIT_PUSH, DEPLOY, SECRET_ACCESS, etc."
+        params:
+          type: object
+          additionalProperties: true
+
+    ActionEnvelope:
+      type: object
+      required: [run_id, task_id, actor, tenant_id, requested_action]
+      properties:
+        run_id:
+          type: string
+        task_id:
+          type: string
+        actor:
+          $ref: "#/components/schemas/Actor"
+        tenant_id:
+          type: string
+        policy_profile_id:
+          type: string
+          default: "default"
+        requested_action:
+          $ref: "#/components/schemas/RequestedAction"
+        data_tags:
+          type: array
+          items:
+            type: string
+          example: ["public", "license:apache-2.0", "pii:none"]
+        budget:
+          $ref: "#/components/schemas/Budget"
+
+    CreateRunRequest:
+      type: object
+      required: [tenant_id, goal]
+      properties:
+        tenant_id:
+          type: string
+        project_id:
+          type: string
+          nullable: true
+        goal:
+          type: string
+          minLength: 1
+        inputs:
+          type: object
+          additionalProperties: true
+        repo_refs:
+          type: array
+          items:
+            type: string
+        policy_profile_id:
+          type: string
+          default: "default"
+        budget:
+          $ref: "#/components/schemas/Budget"
+
+    RunResponse:
+      type: object
+      properties:
+        run_id:
+          type: string
+        tenant_id:
+          type: string
+        project_id:
+          type: string
+          nullable: true
+        goal:
+          type: string
+        status:
+          $ref: "#/components/schemas/RunStatus"
+        policy_profile_id:
+          type: string
+        created_at:
+          type: integer
+          description: Unix timestamp
+
+    CreateTaskRequest:
+      type: object
+      required: [type, agent_role]
+      properties:
+        type:
+          type: string
+          description: "Task type: plan, code, review, test"
+        agent_role:
+          type: string
+          enum: [planner, coder, reviewer, qa]
+        inputs:
+          type: object
+          additionalProperties: true
+
+    DispatchTaskRequest:
+      type: object
+      required: [action_type]
+      properties:
+        action_type:
+          type: string
+          description: "Action type for policy evaluation"
+        inputs:
+          type: object
+          additionalProperties: true
+
+    CompleteTaskRequest:
+      type: object
+      properties:
+        outputs:
+          type: object
+          additionalProperties: true
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+
+    TaskResponse:
+      type: object
+      properties:
+        task_id:
+          type: string
+        run_id:
+          type: string
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        type:
+          type: string
+        agent_role:
+          type: string
+          nullable: true
+        created_at:
+          type: integer
+
+    ArtifactResponse:
+      type: object
+      properties:
+        artifact_id:
+          type: string
+        run_id:
+          type: string
+        type:
+          type: string
+        content_hash:
+          type: string
+          description: SHA-256 hex digest of the artifact content
+        created_at:
+          type: integer
+
+    ArtifactDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/ArtifactResponse"
+        - type: object
+          properties:
+            content:
+              type: object
+              additionalProperties: true
+
+    PolicyProfile:
+      type: object
+      properties:
+        profile_id:
+          type: string
+        description:
+          type: string
+        side_effect_actions:
+          type: array
+          items:
+            type: string
+        deny_action_types:
+          type: array
+          items:
+            type: string
+        require_approval_for:
+          type: array
+          items:
+            type: string
+        default_decision:
+          $ref: "#/components/schemas/PolicyDecision"
+
+    PolicyEvaluateRequest:
+      type: object
+      required: [envelope]
+      properties:
+        envelope:
+          $ref: "#/components/schemas/ActionEnvelope"
+
+    PolicyEvaluateResponse:
+      type: object
+      properties:
+        decision:
+          $ref: "#/components/schemas/PolicyDecision"
+        reason:
+          type: string
+        policy_profile_id:
+          type: string
+
+    ApproveRequest:
+      type: object
+      properties:
+        approved_by:
+          type: string
+          nullable: true
+        note:
+          type: string
+          nullable: true

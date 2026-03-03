@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://9teve-os.example.com/schemas/action-envelope.json",
+  "title": "ActionEnvelope",
+  "description": "Every tool or agent call must be wrapped in this envelope before policy evaluation. The envelope provides the context needed for auditing, policy decisions, and tracing.",
+  "type": "object",
+  "required": ["run_id", "task_id", "actor", "tenant_id", "requested_action"],
+  "additionalProperties": false,
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "description": "Identifier of the run this action belongs to.",
+      "pattern": "^run_[0-9a-f]{16}$"
+    },
+    "task_id": {
+      "type": "string",
+      "description": "Identifier of the task performing the action.",
+      "pattern": "^task_[0-9a-f]{16}$"
+    },
+    "actor": {
+      "type": "object",
+      "description": "Identity of the agent issuing the action.",
+      "required": ["agent_id", "role"],
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "description": "Ephemeral agent instance identifier (e.g. 'coder-agent-17')."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["planner", "coder", "reviewer", "qa"],
+          "description": "RBAC role of the agent."
+        }
+      }
+    },
+    "tenant_id": {
+      "type": "string",
+      "description": "Tenant / workspace boundary. Must be present on every storage key and artefact path."
+    },
+    "policy_profile_id": {
+      "type": "string",
+      "default": "default",
+      "description": "Policy profile used to evaluate this action. Must match a known profile in the Policy Decision Point."
+    },
+    "requested_action": {
+      "type": "object",
+      "description": "The action being requested.",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Action type identifier. Side-effect actions (GIT_PUSH, DEPLOY, SECRET_ACCESS, OUTBOUND_NETWORK, PUBLISH_DOCS) are gated by policy.",
+          "examples": ["GIT_COMMIT", "GIT_PUSH", "READ_FILE", "WRITE_FILE", "DEPLOY", "SECRET_ACCESS", "OUTBOUND_NETWORK", "PUBLISH_DOCS", "RUN_TESTS"]
+        },
+        "params": {
+          "type": "object",
+          "description": "Action-specific parameters. Content depends on action type.",
+          "additionalProperties": true
+        }
+      }
+    },
+    "data_tags": {
+      "type": "array",
+      "description": "Data classification tags for the inputs/outputs of this action.",
+      "items": { "type": "string" },
+      "examples": [["public", "license:apache-2.0", "pii:none"]]
+    },
+    "budget": {
+      "type": "object",
+      "description": "Resource budget for this action.",
+      "additionalProperties": false,
+      "properties": {
+        "tokens": {
+          "type": ["integer", "null"],
+          "description": "Maximum LLM tokens allowed."
+        },
+        "time_s": {
+          "type": ["integer", "null"],
+          "description": "Maximum wall-clock time in seconds."
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "run_id": "run_a1b2c3d4e5f6a7b8",
+      "task_id": "task_b1c2d3e4f5a6b7c8",
+      "actor": { "agent_id": "coder-agent-17", "role": "coder" },
+      "tenant_id": "org-9teve-o",
+      "policy_profile_id": "default",
+      "requested_action": {
+        "type": "GIT_COMMIT",
+        "params": { "message": "feat: add new function pack", "branch": "feature/x" }
+      },
+      "data_tags": ["public", "license:apache-2.0", "pii:none"],
+      "budget": { "tokens": 200000, "time_s": 1800 }
+    }
+  ]
+}
