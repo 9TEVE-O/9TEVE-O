@@ -52,3 +52,24 @@ class AuditResponse(BaseModel):
     answer: str
     citations: list[dict]
     audit_pack: dict
+
+
+class FeedbackRequest(BaseModel):
+    audit_id: str = Field(..., description="ID of the audit record being rated")
+    rating: int = Field(..., ge=1, le=5, description="Rating from 1 (very poor) to 5 (excellent)")
+    comment: str | None = Field(default=None, description="Optional free-text comment")
+
+
+class FeedbackResponse(BaseModel):
+    feedback_id: str
+    audit_id: str
+    rating: int
+    comment: str | None
+    created_at: int
+
+
+class FeedbackSummary(BaseModel):
+    feedback_id: str
+    audit_id: str
+    rating: int
+    created_at: int

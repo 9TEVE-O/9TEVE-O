@@ -18,6 +18,9 @@ from able_to_answer.api.models import (
     AuditResponse,
     AuditSummary,
     DocumentSummary,
+    FeedbackRequest,
+    FeedbackResponse,
+    FeedbackSummary,
     IngestResponse,
     IngestTextRequest,
 )
@@ -185,4 +188,56 @@ def get_audit(audit_id: str):
         answer=row["answer"],
         citations=json.loads(row["citations_json"]),
         audit_pack=json.loads(row["pack_json"]),
+    )
+
+
+@app.post("/feedback", response_model=FeedbackResponse, status_code=201)
+def submit_feedback(req: FeedbackRequest):
+    audit = store.get_audit(audit_id=req.audit_id)
+    if not audit:
+        return JSONResponse(status_code=404, content={"error": "audit_not_found"})
+
+    feedback_id = store.insert_feedback(
+        audit_id=req.audit_id,
+        rating=req.rating,
+        comment=req.comment,
+    )
+    row = store.get_feedback(feedback_id=feedback_id)
+
+    logger.info("feedback: audit=%s feedback=%s rating=%d", req.audit_id, feedback_id, req.rating)
+
+    return FeedbackResponse(
+        feedback_id=row["id"],
+        audit_id=row["audit_id"],
+        rating=row["rating"],
+        comment=row["comment"],
+        created_at=row["created_at"],
+    )
+
+
+@app.get("/feedback", response_model=list[FeedbackSummary])
+def list_feedback():
+    rows = store.list_feedback()
+    return [
+        FeedbackSummary(
+            feedback_id=r["id"],
+            audit_id=r["audit_id"],
+            rating=r["rating"],
+            created_at=r["created_at"],
+        )
+        for r in rows
+    ]
+
+
+@app.get("/feedback/{feedback_id}", response_model=FeedbackResponse)
+def get_feedback(feedback_id: str):
+    row = store.get_feedback(feedback_id=feedback_id)
+    if not row:
+        return JSONResponse(status_code=404, content={"error": "feedback_not_found"})
+    return FeedbackResponse(
+        feedback_id=row["id"],
+        audit_id=row["audit_id"],
+        rating=row["rating"],
+        comment=row["comment"],
+        created_at=row["created_at"],
     )
