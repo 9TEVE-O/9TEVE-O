@@ -1,0 +1,51 @@
+name: Review Automation
+
+# Triggered when work is waiting for review/approval or when reviewers
+# leave feedback that should be acknowledged.
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - ready_for_review
+      - synchronize
+      - review_requested
+  pull_request_review:
+    types:
+      - submitted
+  pull_request_review_comment:
+    types:
+      - created
+
+jobs:
+  automate:
+    runs-on: ubuntu-latest
+    # Permissions are intentionally minimal:
+    #   pull-requests: write  — post reviews and comments
+    #   contents: read        — check out code (needed for Python setup)
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run review bot
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_ACTION: ${{ github.event.action }}
+          # PR number — present on all three event types via pull_request context
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          # Draft flag and head SHA are only meaningful for pull_request events
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # Body of an incoming review or review comment (for future enrichment)
+          REVIEW_BODY: ${{ github.event.review.body || github.event.comment.body }}
+        run: python scripts/gh_review_bot.py
