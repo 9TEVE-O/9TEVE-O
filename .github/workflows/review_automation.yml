@@ -21,10 +21,14 @@ jobs:
   automate:
     runs-on: ubuntu-latest
     # Permissions are intentionally minimal:
-    #   pull-requests: write  — post reviews and comments
+    #   pull-requests: write  — post PR reviews
+    #   issues: write         — post PR issue comments via /issues/{pr}/comments
+    #   checks: read          — read check-run conclusions from the Checks API
     #   contents: read        — check out code (needed for Python setup)
     permissions:
       pull-requests: write
+      issues: write
+      checks: read
       contents: read
 
     steps:

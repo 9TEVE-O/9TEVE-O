@@ -74,6 +74,11 @@ SAFE_PATH_PREFIXES: tuple[str, ...] = (
     ".gitignore",
 )
 
+# Check-run conclusions that are treated as blocking (CI has not passed).
+FAILING_CONCLUSIONS: frozenset[str] = frozenset(
+    {"failure", "timed_out", "cancelled", "action_required", "startup_failure"}
+)
+
 # ---------------------------------------------------------------------------
 # Standard response messages — common GitHub collaboration language
 # ---------------------------------------------------------------------------
@@ -215,6 +220,10 @@ def decide_action(
     if has_sensitive:
         return "flag_sensitive"
 
+    # An empty check list means CI hasn't started yet — defer to be safe.
+    if not check_conclusions:
+        return "ci_pending"
+
     # Map None (in-progress / queued) → "pending"
     normalised = [c if c is not None else "pending" for c in check_conclusions]
 
@@ -222,11 +231,7 @@ def decide_action(
     if pending:
         return "ci_pending"
 
-    failing = [
-        c
-        for c in normalised
-        if c in {"failure", "timed_out", "cancelled", "action_required", "startup_failure"}
-    ]
+    failing = [c for c in normalised if c in FAILING_CONCLUSIONS]
     if failing:
         return "ci_failing"
 
@@ -280,9 +285,22 @@ class GitHubClient:
             ) from exc
 
     def get_pr_files(self, pr_number: int) -> list[str]:
-        """Return the list of filenames changed in *pr_number*."""
-        data = self._request("GET", f"/repos/{self._repo}/pulls/{pr_number}/files")
-        return [f["filename"] for f in data]
+        """Return the list of filenames changed in *pr_number* (all pages)."""
+        files: list[str] = []
+        page = 1
+        per_page = 100
+        while True:
+            data = self._request(
+                "GET",
+                f"/repos/{self._repo}/pulls/{pr_number}/files?per_page={per_page}&page={page}",
+            )
+            if not data:
+                break
+            files.extend(f["filename"] for f in data)
+            if len(data) < per_page:
+                break
+            page += 1
+        return files
 
     def get_commit_check_runs(self, sha: str) -> list[dict[str, Any]]:
         """Return all check-run objects for the given commit SHA."""
@@ -416,7 +434,7 @@ def main() -> None:  # pragma: no cover — exercised end-to-end in CI
             failing = [
                 cr["name"]
                 for cr in check_runs
-                if cr.get("conclusion") in {"failure", "timed_out", "cancelled"}
+                if cr.get("conclusion") in FAILING_CONCLUSIONS
             ]
             bullet_list = "\n".join(f"- {name}" for name in failing)
             client.post_comment(

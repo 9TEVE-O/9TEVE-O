@@ -193,6 +193,34 @@ def test_decide_action_ci_cancelled():
     assert action == "ci_failing"
 
 
+def test_decide_action_ci_action_required():
+    action = bot.decide_action(
+        is_draft=False,
+        changed_files=["docs/guide.md"],
+        check_conclusions=["action_required"],
+    )
+    assert action == "ci_failing"
+
+
+def test_decide_action_ci_startup_failure():
+    action = bot.decide_action(
+        is_draft=False,
+        changed_files=["docs/guide.md"],
+        check_conclusions=["startup_failure"],
+    )
+    assert action == "ci_failing"
+
+
+def test_decide_action_empty_checks_defers():
+    """Empty check list means CI hasn't started — always defer."""
+    action = bot.decide_action(
+        is_draft=False,
+        changed_files=["docs/guide.md"],
+        check_conclusions=[],
+    )
+    assert action == "ci_pending"
+
+
 def test_decide_action_mixed_success_and_failure():
     action = bot.decide_action(
         is_draft=False,
@@ -225,13 +253,13 @@ def test_decide_action_approve_docs_only_all_success():
 
 
 def test_decide_action_approve_no_checks_safe_paths():
-    """When there are no CI checks, safe-path-only PR is approved."""
+    """Empty check list means CI hasn't started yet — defers to ci_pending."""
     action = bot.decide_action(
         is_draft=False,
         changed_files=["docs/index.md"],
         check_conclusions=[],
     )
-    assert action == "approve"
+    assert action == "ci_pending"
 
 
 def test_decide_action_approve_tests_path():
@@ -277,10 +305,10 @@ def test_decide_action_acknowledge_mixed_safe_and_src():
 
 
 def test_decide_action_acknowledge_no_files_no_checks():
-    """Empty PR with no checks — safe paths, so approve."""
+    """Empty PR with no checks — CI hasn't started, so defer."""
     action = bot.decide_action(
         is_draft=False,
         changed_files=[],
         check_conclusions=[],
     )
-    assert action == "approve"
+    assert action == "ci_pending"
