@@ -222,7 +222,11 @@ def decide_action(
     if pending:
         return "ci_pending"
 
-    failing = [c for c in normalised if c in {"failure", "timed_out", "cancelled"}]
+    failing = [
+        c
+        for c in normalised
+        if c in {"failure", "timed_out", "cancelled", "action_required", "startup_failure"}
+    ]
     if failing:
         return "ci_failing"
 
