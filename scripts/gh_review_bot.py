@@ -286,11 +286,31 @@ class GitHubClient:
 
     def get_commit_check_runs(self, sha: str) -> list[dict[str, Any]]:
         """Return all check-run objects for the given commit SHA."""
-        data = self._request(
-            "GET", f"/repos/{self._repo}/commits/{sha}/check-runs"
-        )
-        return data.get("check_runs", [])
+        all_runs: list[dict[str, Any]] = []
+        page = 1
+        total_count: int | None = None
 
+        while True:
+            data = self._request(
+                "GET",
+                f"/repos/{self._repo}/commits/{sha}/check-runs?per_page=100&page={page}",
+            )
+            check_runs = data.get("check_runs", [])
+            all_runs.extend(check_runs)
+
+            if total_count is None:
+                # GitHub returns the total number of check runs for this commit.
+                total_count = data.get("total_count")
+
+            # Stop if this page returned no results, or we've collected all known runs.
+            if not check_runs:
+                break
+            if total_count is not None and len(all_runs) >= total_count:
+                break
+
+            page += 1
+
+        return all_runs
     def post_comment(self, pr_number: int, body: str) -> None:
         """Post an issue comment on the pull request."""
         self._request(
