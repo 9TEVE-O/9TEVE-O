@@ -4,9 +4,16 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from able_to_answer.api.main import app
-from able_to_answer.control_plane.storage import ControlPlaneStore
 import able_to_answer.control_plane.router as cp_router_module
+from able_to_answer.api.main import app
+from able_to_answer.control_plane.models import (
+    ActionEnvelope,
+    Actor,
+    PolicyDecision,
+    RequestedAction,
+)
+from able_to_answer.control_plane.policy import evaluate_action, get_policy_profile
+from able_to_answer.control_plane.storage import ControlPlaneStore
 
 
 @pytest.fixture()
@@ -447,9 +454,6 @@ def test_evaluate_policy_permissive_allows_side_effect(client):
 # Unit tests for policy module
 # ─────────────────────────────────────────────────────────
 
-from able_to_answer.control_plane.policy import evaluate_action, get_policy_profile, BUILTIN_PROFILES
-from able_to_answer.control_plane.models import ActionEnvelope, Actor, RequestedAction, Budget
-
 
 def _envelope(action_type: str, profile: str = "default") -> ActionEnvelope:
     return ActionEnvelope(
@@ -475,31 +479,26 @@ def test_policy_get_profile_returns_builtin():
 
 def test_policy_evaluate_unknown_profile_denies():
     decision, reason = evaluate_action(_envelope("GIT_COMMIT", "ghost"))
-    from able_to_answer.control_plane.models import PolicyDecision
     assert decision == PolicyDecision.deny
     assert "ghost" in reason
 
 
 def test_policy_evaluate_non_side_effect_allowed():
-    from able_to_answer.control_plane.models import PolicyDecision
     decision, _ = evaluate_action(_envelope("READ_FILE", "default"))
     assert decision == PolicyDecision.allow
 
 
 def test_policy_evaluate_side_effect_pending_approval_default():
-    from able_to_answer.control_plane.models import PolicyDecision
     decision, _ = evaluate_action(_envelope("GIT_PUSH", "default"))
     assert decision == PolicyDecision.pending_approval
 
 
 def test_policy_evaluate_side_effect_denied_strict():
-    from able_to_answer.control_plane.models import PolicyDecision
     decision, _ = evaluate_action(_envelope("DEPLOY", "strict"))
     assert decision == PolicyDecision.deny
 
 
 def test_policy_evaluate_side_effect_allowed_permissive():
-    from able_to_answer.control_plane.models import PolicyDecision
     decision, _ = evaluate_action(_envelope("SECRET_ACCESS", "permissive"))
     assert decision == PolicyDecision.allow
 
@@ -507,8 +506,6 @@ def test_policy_evaluate_side_effect_allowed_permissive():
 # ─────────────────────────────────────────────────────────
 # Unit tests for ControlPlaneStore
 # ─────────────────────────────────────────────────────────
-
-from able_to_answer.control_plane.storage import ControlPlaneStore
 
 
 def test_store_create_and_get_run(tmp_path):
