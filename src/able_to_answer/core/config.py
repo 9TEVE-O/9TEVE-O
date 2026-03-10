@@ -11,6 +11,7 @@ class Settings:
     chunk_overlap_chars: int = int(os.getenv("ATA_CHUNK_OVERLAP_CHARS", "200"))
     max_context_chunks: int = int(os.getenv("ATA_MAX_CONTEXT_CHUNKS", "6"))
     max_answer_chars: int = int(os.getenv("ATA_MAX_ANSWER_CHARS", "1800"))
+    github_token: str | None = os.getenv("ATA_GITHUB_TOKEN")
 
 
 settings = Settings()
