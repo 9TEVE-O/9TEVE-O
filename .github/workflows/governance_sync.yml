@@ -1,0 +1,59 @@
+name: Governance Sync & Reporting Pipeline
+on:
+  schedule:
+    - cron: "0 0 * * *"  # Daily at midnight UTC
+  workflow_dispatch:     # Manual trigger for testing
+
+jobs:
+  sync-governance-profiles:
+    name: Sync Studio AI → Codex Profiles
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: pip install -e ".[governance]"
+
+      - name: Run Governance Sync
+        env:
+          CODEX_API_TOKEN: ${{ secrets.CODEX_API_TOKEN }}
+          STUDIO_REGISTRY_API_KEY: ${{ secrets.STUDIO_REGISTRY_API_KEY }}
+          STUDIO_REGISTRY_BASE: ${{ secrets.STUDIO_REGISTRY_BASE }}
+          CODEX_BASE: ${{ secrets.CODEX_BASE }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_COMPLIANCE_DB: ${{ secrets.NOTION_COMPLIANCE_DB }}
+        run: |
+          python scripts/sync_studio_to_codex.py > sync.log
+          cat sync.log
+
+      - name: Upload Sync Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sync_output
+          path: sync.log
+
+      - name: Fail on Critical Sync Errors
+        if: failure()
+        run: |
+          echo "::error::Governance profile sync failed"
+          exit 1
+
+  generate-compliance-report:
+    name: Generate Monthly Compliance Report
+    needs: sync-governance-profiles
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: pip install -e ".[governance]"
+
+      - name: Run Compliance Reporting
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_COMPLIANCE_REPORT_DB: ${{ secrets.NOTION_COMPLIANCE_REPORT_DB }}
+        run: |
+          python scripts/generate_compliance_report.py
