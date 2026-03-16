@@ -8,6 +8,8 @@ jobs:
   sync-governance-profiles:
     name: Sync Studio AI → Codex Profiles
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -44,6 +46,8 @@ jobs:
     name: Generate Monthly Compliance Report
     needs: sync-governance-profiles
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
