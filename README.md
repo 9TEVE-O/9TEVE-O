@@ -15,11 +15,11 @@
 
 ## 🧑‍💻 About Me
 
-I build systems that think, automate, and scale. My work sits at the intersection of **AI/ML pipelines**, **intelligent automation**, and **security-conscious engineering** — with a focus on tools that actually ship and solve real problems.
+I build systems that think, automate, and scale. My work sits at the intersection of **AI/ML pipelines**, **intelligent automation**, and **security-conscious engineering**—with a focus on tools that actually ship and solve real problems.
 
 - 🤖 Fascinated by AI agents, RAG pipelines, and LLM orchestration
-- ⚙️ Automation-first mindset: if it's done twice, it should be scripted
-- 🔐 Security-aware by default — treating data as untrusted, systems as adversarial
+- ⚙️ Automation-first mindset: if it's done twice, it should be scripted.
+- 🔐 Security-aware by default—treating data as untrusted, systems as adversarial
 - 🚀 Always exploring the edge of what's possible with dev tooling and web performance
 
 ---
@@ -54,12 +54,12 @@ I build systems that think, automate, and scale. My work sits at the intersectio
 
 | Project | Description |
 |---------|-------------|
-| [**🔍 AI-Policy-Terms-Analyzer**](https://github.com/9TEVE-O/AI-Policy-Terms-Analyzer) | Parses and analyses AI service Terms of Service and privacy policies — surfacing data rights, risks, and gotchas so you don't have to read the fine print. |
-| [**🕷️ SpiderID_APP**](https://github.com/9TEVE-O/SpiderID_APP) | Computer vision app for spider identification — combining image classification with a clean mobile-first UX. |
-| [**🧠 DeepResearch**](https://github.com/9TEVE-O/DeepResearch) | Leading open-source deep research agent (Tongyi). Orchestrates multi-step reasoning and retrieval to produce comprehensive, cited research outputs. |
-| [**🎬 Waver**](https://github.com/9TEVE-O/Waver) | Unified Text-to-Video and Image-to-Video generation using industry-level video foundation models. |
+| [**🔍 AI-Policy-Terms-Analyzer**](https://github.com/9TEVE-O/AI-Policy-Terms-Analyzer) | Parses and analyses AI service Terms of Service and privacy policies—surfacing data rights, risks, and gotchas so you don't have to read the fine print. |
+| [**🕷️ SpiderID_APP**](https://github.com/9TEVE-O/SpiderID_APP) | Computer vision app for spider identification—combining image classification with a clean mobile-first UX. |
+| [**🧠 DeepResearch**](https://github.com/9TEVE-O/DeepResearch) | Leading open-source deep research agent (Tongyi). Orchestrates multi-step reasoning and retrieval to produce comprehensive, cited research outputs.
+| [**🎬 Waver**](https://github.com/9TEVE-O/Waver) | Unified text-to-video and image-to-video generation using industry-level video foundation models. |
 | [**🎭 personaplex**](https://github.com/9TEVE-O/personaplex) | Dynamic persona management and composition for AI agents and conversational systems. |
-| [**🤖 clawdbot-formal-models**](https://github.com/9TEVE-O/clawdbot-formal-models) | Formal behavioural models for ClawdBot — bringing rigour and verifiability to conversational AI system design. |
+| [**🤖 clawdbot-formal-models**](https://github.com/9TEVE-O/clawdbot-formal-models) | Formal behavioral models for ClawdBot—bringing rigour and verifiability to conversational AI system design. |
 
 ---
 
@@ -76,9 +76,9 @@ I build systems that think, automate, and scale. My work sits at the intersectio
 
 ## ⚙️ Setup & Stack Status
 
-My full personal infrastructure — GitHub profile, MCP servers, Google Drive sync, Slack integration, and automation pipelines — is tracked in:
+My full personal infrastructure—GitHub profile, MCP servers, Google Drive sync, Slack integration, and automation pipelines—is tracked in:
 
-**[→ SETUP_PLAN.md](./SETUP_PLAN.md)**
+**[→ SETUP_PLAN. md](./SETUP_PLAN.md)**
 
 | Layer | Status |
 |-------|--------|
@@ -96,7 +96,7 @@ My full personal infrastructure — GitHub profile, MCP servers, Google Drive sy
 
 ## 🤝 Let's Connect & Collaborate
 
-I'm always open to collaborating on projects that push the boundaries of AI, automation, and intelligent systems. Whether it's a new idea, an open-source contribution, or just a conversation — reach out.
+I'm always open to collaborating on projects that push the boundaries of AI, automation, and intelligent systems. Whether it's a new idea, an open-source contribution, or just a conversation—reach out.
 
 <div align="center">
 
