@@ -35,16 +35,19 @@ def _env(name: str, required: bool = True) -> str:
 
 
 def _collect_audit_summary(db_path: str) -> dict:
-    """Return aggregate statistics from the audit table for the current month."""
+    """Return aggregate statistics from the audits table for the current month.
+
+    ``created_at`` is stored as an INTEGER unix timestamp, so we convert it
+    with ``datetime(created_at, 'unixepoch')`` before formatting.
+    """
     con = sqlite3.connect(db_path)
     try:
         cur = con.execute(
             """
             SELECT COUNT(*) AS total_queries,
-                   COUNT(DISTINCT document_id) AS unique_documents,
-                   AVG(elapsed_ms) AS avg_elapsed_ms
-            FROM audit
-            WHERE strftime('%Y-%m', created_at) = ?
+                   COUNT(DISTINCT document_id) AS unique_documents
+            FROM audits
+            WHERE strftime('%Y-%m', datetime(created_at, 'unixepoch')) = ?
             """,
             (_REPORT_MONTH,),
         )
@@ -52,7 +55,6 @@ def _collect_audit_summary(db_path: str) -> dict:
         return {
             "total_queries": row[0] or 0,
             "unique_documents": row[1] or 0,
-            "avg_elapsed_ms": round(row[2] or 0.0, 2),
         }
     finally:
         con.close()
@@ -69,7 +71,6 @@ def _publish_notion_report(notion_token: str, db_id: str, summary: dict) -> str:
             "Report Month": {"title": [{"text": {"content": _REPORT_MONTH}}]},
             "Total Queries": {"number": summary["total_queries"]},
             "Unique Documents": {"number": summary["unique_documents"]},
-            "Avg Elapsed ms": {"number": summary["avg_elapsed_ms"]},
         },
     )
     return response.get("url", "<unknown>")
@@ -84,10 +85,9 @@ def main() -> int:
 
     summary = _collect_audit_summary(db_path)
     logger.info(
-        "Total queries: %d | Unique documents: %d | Avg elapsed ms: %.2f",
+        "Total queries: %d | Unique documents: %d",
         summary["total_queries"],
         summary["unique_documents"],
-        summary["avg_elapsed_ms"],
     )
 
     url = _publish_notion_report(notion_token, notion_db, summary)
