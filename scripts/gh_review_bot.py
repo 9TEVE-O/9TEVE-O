@@ -329,6 +329,7 @@ class GitHubClient:
             page += 1
 
         return all_runs
+
     def post_comment(self, pr_number: int, body: str) -> None:
         """Post an issue comment on the pull request."""
         self._request(
