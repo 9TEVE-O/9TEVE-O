@@ -14,6 +14,7 @@ from able_to_answer.retrieval.service import retrieve_top_chunks
 from able_to_answer.audit.service import build_audit_pack
 from able_to_answer.control_plane.router import router as cp_router
 from able_to_answer.github_search.router import router as gh_router
+from able_to_answer.suggest_upgrades.router import router as su_router
 from able_to_answer.api.models import (
     AskRequest,
     AskResponse,
@@ -35,6 +36,7 @@ app = FastAPI(
 
 app.include_router(cp_router)
 app.include_router(gh_router)
+app.include_router(su_router)
 
 store = SqliteStore(settings.db_path)
 
