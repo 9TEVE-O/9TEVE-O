@@ -27,7 +27,7 @@ jobs:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_COMPLIANCE_DB: ${{ secrets.NOTION_COMPLIANCE_DB }}
         run: |
-          python scripts/sync_studio_to_codex.py > sync.log
+          python scripts/sync_studio_to_codex.py > sync.log 2>&1
           cat sync.log
 
       # Log artifacts for debugging
