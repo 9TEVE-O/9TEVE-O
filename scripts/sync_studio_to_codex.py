@@ -11,6 +11,8 @@ Environment variables consumed
 ``STUDIO_REGISTRY_API_KEY``  Studio Registry API key (required)
 ``NOTION_TOKEN``             Notion integration token (required)
 ``NOTION_COMPLIANCE_DB``     Notion database ID for compliance events (required)
+``STUDIO_REGISTRY_BASE_URL`` Base URL for Studio Registry API (optional; defaults to ``https://registry.studio.ai``)
+``CODEX_BASE_URL``           Base URL for Codex API (optional; defaults to ``https://api.codex.ai``)
 """
 from __future__ import annotations
 
