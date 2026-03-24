@@ -61,7 +61,7 @@ jobs:
       - name: Run Compliance Reporting
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_COMPLIANCE_REPORT_DB: ${{ secrets.NOTION_COMPLIANCE_REPORT_DB }}
           NOTION_COMPLIANCE_REPORT_DB: ${{ secrets.NOTION_COMPLIANCE_REPORT_DB }}
           NOTION_COMPLIANCE_DB: ${{ secrets.NOTION_COMPLIANCE_DB }}
         run: |
