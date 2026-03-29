@@ -1,0 +1,104 @@
+name: Fork Manager Pipeline
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"  # Every Monday at 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      top_n:
+        description: "Number of top forks to highlight"
+        required: false
+        default: "8"
+      sync_repos:
+        description: "Space-separated list of owner/repo to sync (leave blank to skip sync step)"
+        required: false
+        default: ""
+
+jobs:
+  inventory:
+    name: Inventory & Prioritize Forks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -e "." -q
+
+      - name: Run fork inventory
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_USER: ${{ github.repository_owner }}
+          TOP_N: ${{ github.event.inputs.top_n || '8' }}
+          INVENTORY_PATH: FORKS_INVENTORY.md
+        run: python scripts/fork_inventory.py
+
+      - name: Upload inventory artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: forks-inventory
+          path: FORKS_INVENTORY.md
+          retention-days: 30
+
+      - name: Commit updated inventory
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add FORKS_INVENTORY.md
+          git diff --cached --quiet || git commit -m "[fork-manager] update: refresh FORKS_INVENTORY.md"
+          git push
+
+  sync-forks:
+    name: Sync Selected Forks
+    runs-on: ubuntu-latest
+    needs: inventory
+    if: ${{ github.event.inputs.sync_repos != '' }}
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download inventory
+        uses: actions/download-artifact@v4
+        with:
+          name: forks-inventory
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -e "." -q
+
+      - name: Sync forks
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          WORKSPACE_DIR: /tmp/fork_workspace
+          INVENTORY_PATH: FORKS_INVENTORY.md
+        run: python scripts/fork_sync.py ${{ github.event.inputs.sync_repos }}
+
+      - name: Upload sync results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fork-sync-results
+          path: FORKS_INVENTORY.md
+          retention-days: 30
+
+      - name: Commit sync log update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add FORKS_INVENTORY.md
+          git diff --cached --quiet || git commit -m "[fork-manager] update: append sync log entries"
+          git push
