@@ -45,8 +45,8 @@ jobs:
         if: always()
         with:
           name: codeql-debug-artifacts-${{ matrix.language }}
-          # CodeQL stores debug artifacts (logs, DB zip) in this directory when debug: true
-          path: ${{ runner.temp }}/codeql_debug_dir
+          # Use the debug-artifacts directory provided by the CodeQL init action when debug: true
+          path: ${{ env.CODEQL_ACTION_DEBUG_ARTIFACTS }}
           if-no-files-found: warn
           retention-days: 7
 
