@@ -24,6 +24,14 @@ I build systems that think, automate, and scale. My work sits at the intersectio
 
 ---
 
+## 🏗️ Scale Stack
+
+The **Scale Stack** is the operating philosophy and reference architecture behind everything I build at JOGO INC. It defines seven locked layers — orchestration, agents, AI, data, frontend, security, and observability — each with a fixed purpose, an approved short-list of technologies, hard constraints, and a named scale vector.
+
+→ **[Full reference: docs/scale-stack.md](./docs/scale-stack.md)**
+
+---
+
 ## 🛠️ Skills & Interests
 
 **AI / Machine Learning**
