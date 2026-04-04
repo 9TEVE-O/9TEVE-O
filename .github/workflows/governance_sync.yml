@@ -19,7 +19,6 @@ jobs:
 
       - name: Run Governance Sync
         env:
-          CODEX_API_TOKEN: ${{ secrets.CODEX_API_TOKEN }}
           STUDIO_REGISTRY_API_KEY: ${{ secrets.STUDIO_REGISTRY_API_KEY }}
           STUDIO_REGISTRY_BASE: ${{ secrets.STUDIO_REGISTRY_BASE }}
           CODEX_BASE: ${{ secrets.CODEX_BASE }}
