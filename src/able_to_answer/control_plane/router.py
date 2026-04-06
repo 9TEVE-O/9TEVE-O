@@ -12,7 +12,6 @@ from able_to_answer.control_plane.models import (
     CompleteTaskRequest,
     CreateRunRequest,
     CreateTaskRequest,
-    DispatchTaskRequest,
     PolicyEvaluateRequest,
     PolicyEvaluateResponse,
     RunResponse,
@@ -155,7 +154,7 @@ def list_tasks(run_id: str) -> list[TaskResponse]:
 
 
 @router.post("/tasks/{task_id}/dispatch", status_code=200)
-def dispatch_task(task_id: str, req: DispatchTaskRequest) -> dict:
+def dispatch_task(task_id: str) -> dict:
     """Dispatch a pending task directly."""
     task = cp_store.get_task(task_id=task_id)
     if not task:

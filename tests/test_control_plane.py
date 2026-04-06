@@ -137,14 +137,13 @@ def test_create_and_list_tasks(client):
     assert tasks[0]["task_id"] == data["task_id"]
 
 
-def test_dispatch_task_non_side_effect_allowed(client):
+def test_dispatch_task_unconditional(client):
     """Any action is dispatched immediately — no policy gate."""
     run_id = _create_run(client).json()["run_id"]
     task_id = _create_task(client, run_id).json()["task_id"]
 
     resp = client.post(
         f"/v1/tasks/{task_id}/dispatch",
-        json={"action_type": "GIT_COMMIT"},
     )
     assert resp.status_code == 200
     data = resp.json()
@@ -182,7 +181,7 @@ def test_complete_task(client):
     task_id = _create_task(client, run_id).json()["task_id"]
 
     # Dispatch first
-    client.post(f"/v1/tasks/{task_id}/dispatch", json={"action_type": "GIT_COMMIT"})
+    client.post(f"/v1/tasks/{task_id}/dispatch")
 
     # Complete
     resp = client.post(
@@ -211,18 +210,15 @@ def test_list_tasks_run_not_found(client):
 
 
 def test_dispatch_task_not_found(client):
-    resp = client.post(
-        "/v1/tasks/task_doesnotexist/dispatch",
-        json={"action_type": "GIT_COMMIT"},
-    )
+    resp = client.post("/v1/tasks/task_doesnotexist/dispatch")
     assert resp.status_code == 404
 
 
 def test_dispatch_already_dispatched_task_returns_409(client):
     run_id = _create_run(client).json()["run_id"]
     task_id = _create_task(client, run_id).json()["task_id"]
-    client.post(f"/v1/tasks/{task_id}/dispatch", json={"action_type": "GIT_COMMIT"})
-    resp = client.post(f"/v1/tasks/{task_id}/dispatch", json={"action_type": "GIT_COMMIT"})
+    client.post(f"/v1/tasks/{task_id}/dispatch")
+    resp = client.post(f"/v1/tasks/{task_id}/dispatch")
     assert resp.status_code == 409
 
 
