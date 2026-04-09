@@ -1,7 +1,7 @@
-"""Sync Studio AI governance profiles to Codex.
+"""Fetch Studio AI governance profiles from the Studio Registry.
 
 Reads registered AI profiles from the Studio Registry API and logs
-them.  Results are emitted via the module logger so the CI workflow
+their IDs.  Results are emitted via the module logger so the CI workflow
 can capture them in a log artifact.
 
 Required environment variables
@@ -68,7 +68,9 @@ def main() -> int:
 
     for profile in profiles:
         profile_id = profile.get("id", "<unknown>")
-        logger.info("[OK] %s", profile_id)
+        profile_name = profile.get("name", "<unnamed>")
+        profile_version = profile.get("version", "<unknown>")
+        logger.info("[OK] id=%s name=%s version=%s", profile_id, profile_name, profile_version)
         if notion_token and notion_db:
             _record_notion_outcome(notion_token, notion_db, profile_id, "fetched")
 
