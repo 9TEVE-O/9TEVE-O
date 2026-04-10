@@ -66,6 +66,8 @@ def _collect_audit_summary(db_path: str) -> dict:
 
 def _publish_notion_report(notion_token: str, db_id: str, summary: dict) -> str:
     """Create a compliance-report page in Notion and return its URL."""
+    # Imported locally so that the module loads successfully even when
+    # notion-client is not installed (it is only required for Notion integration).
     import notion_client  # type: ignore[import-untyped]
 
     client = notion_client.Client(auth=notion_token)

@@ -64,6 +64,8 @@ def _record_notion_outcome(
     notion_token: str, db_id: str, profile_id: str, status: str
 ) -> None:
     """Append a sync-outcome row to the Notion compliance database."""
+    # Imported locally so that the module loads successfully even when
+    # notion-client is not installed (it is only required for Notion integration).
     import notion_client  # type: ignore[import-untyped]
 
     client = notion_client.Client(auth=notion_token)

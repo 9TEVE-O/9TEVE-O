@@ -223,6 +223,9 @@ class ControlPlaneStore:
         content_hash = hashlib.sha256(content_json.encode("utf-8")).hexdigest()
         artifact_id = _make_id("artifact", f"{run_id}:{artifact_type}:{content_hash}")
         with self._connect() as con:
+            # INSERT OR IGNORE makes create_artifact idempotent: the same
+            # content always produces the same artifact_id, so duplicate
+            # writes are silently discarded rather than raising a constraint error.
             con.execute(
                 """
                 INSERT OR IGNORE INTO cp_artifacts
