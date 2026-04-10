@@ -12,6 +12,7 @@ from able_to_answer.core.storage import SqliteStore
 from able_to_answer.ingestion.service import ingest_text
 from able_to_answer.retrieval.service import retrieve_top_chunks
 from able_to_answer.audit.service import build_audit_pack
+from able_to_answer.control_plane.router import router as cp_router
 from able_to_answer.github_search.router import router as gh_router
 from able_to_answer.api.models import (
     AskRequest,
@@ -32,6 +33,7 @@ app = FastAPI(
     version="0.1.0",
 )
 
+app.include_router(cp_router)
 app.include_router(gh_router)
 
 store = SqliteStore(settings.db_path)
