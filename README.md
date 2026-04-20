@@ -2,35 +2,73 @@
 
 # Steven Lees
 
-### AI App Developer · Product Builder · Music-Tech Operator
+### AI App Developer · Product Builder · Python Workflow Builder
 
-I build practical AI products, Python-first workflows, and developer tools that move cleanly from idea to usable software. My work sits across app development, document and knowledge systems, workflow automation, and creative technology, with a strong focus on clear product thinking, reliable implementation, and real-world use.
+<p>
+I build original AI software, local-first tools, and product systems designed to be useful in real environments. My work spans Python-led automation, agent workflows, applied analysis tools, and creative technology, with a strong bias toward clear structure, practical interfaces, and software that earns trust by being understandable.
+</p>
 
 </div>
 
-## Selected Repositories
+---
 
-| Repository | Focus |
-|---|---|
-| [KinSync](https://github.com/9TEVE-O/KinSync) | Family coordination SaaS scaffold with clear module boundaries, deterministic local setup, and an explicit deployment path. |
-| [ClawKitchen](https://github.com/9TEVE-O/ClawKitchen) | Local-first UI companion for managing OpenClaw recipe and team workflows. |
-| [ClawRecipes](https://github.com/9TEVE-O/ClawRecipes) | CLI-first recipe system for scaffolding specialist agents and teams from Markdown. |
-| [AI-Policy-Terms-Analyzer](https://github.com/9TEVE-O/AI-Policy-Terms-Analyzer) | Applied AI tooling for analysing service terms, privacy language, and platform risk signals. |
-| [openai-chatkit-starter-app](https://github.com/9TEVE-O/openai-chatkit-starter-app) | Next.js starter for OpenAI-powered chat workflows and rapid interface experiments. |
-| [terraform-genai-knowledge-base](https://github.com/9TEVE-O/terraform-genai-knowledge-base) | End-to-end document Q&A pattern using Vertex AI, Document AI, Firestore, Vector Search, and Cloud Functions. |
+## Original Work
 
-## What I Work On
+<table>
+<tr>
+<td width="50%" valign="top">
 
-- AI applications and product workflows
-- Python, TypeScript, and full-stack build systems
-- Document intelligence, retrieval, and knowledge tooling
-- Developer tooling, templates, and automation
-- Music-tech and creative workflow systems
+### KinSync
+Family coordination SaaS scaffold with clean module boundaries, deterministic local setup, and a clear deployment path.
 
-## Approach
+</td>
+<td width="50%" valign="top">
 
-I care about software that is useful, readable, and built with intent. That means strong foundations, clear interfaces, practical automation, and projects that can be understood quickly by developers, collaborators, and teams evaluating the work.
+### ClawKitchen
+Local-first UI for managing OpenClaw recipe and team workflows through a cleaner operational interface.
 
-## Links
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
 
-- [GitHub](https://github.com/9TEVE-O)
+### ClawRecipes
+CLI-first recipe system for scaffolding specialist agents and teams from Markdown with durable file-first workflows.
+
+</td>
+<td width="50%" valign="top">
+
+### AI Policy & Terms Analyzer
+Applied Python tooling for analysing policy documents, privacy terms, service dependencies, and platform signals.
+
+</td>
+</tr>
+</table>
+
+### Repositories
+- [KinSync](https://github.com/9TEVE-O/KinSync)
+- [ClawKitchen](https://github.com/9TEVE-O/ClawKitchen)
+- [ClawRecipes](https://github.com/9TEVE-O/ClawRecipes)
+- [AI-Policy-Terms-Analyzer](https://github.com/9TEVE-O/AI-Policy-Terms-Analyzer)
+
+---
+
+## Focus
+
+- Python-first application and workflow development
+- AI products and operational tooling
+- Agent systems and structured team workflows
+- Applied analysis and document tooling
+- Creative technology and music-adjacent software
+
+---
+
+## Working Style
+
+I prefer software that is direct, legible, and built with intent. The aim is not novelty for its own sake. It is to design systems, tools, and interfaces that make complex work simpler to run.
+
+---
+
+## GitHub
+
+[github.com/9TEVE-O](https://github.com/9TEVE-O)
