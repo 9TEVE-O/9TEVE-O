@@ -19,27 +19,41 @@ I build original AI software, local-first tools, and product systems designed to
 <td width="50%" valign="top">
 
 ### KinSync
-Family coordination SaaS scaffold with clean module boundaries, deterministic local setup, and a clear deployment path.
+Family coordination application focused on structured communication, clear workflows, and a practical path from prototype to production.
 
 </td>
 <td width="50%" valign="top">
 
-### ClawKitchen
-Local-first UI for managing OpenClaw recipe and team workflows through a cleaner operational interface.
+### Able to Answer
+AI application focused on useful answers, grounded product behaviour, and clear operational interfaces.
 
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 
-### ClawRecipes
-CLI-first recipe system for scaffolding specialist agents and teams from Markdown with durable file-first workflows.
+### Able to Analyze
+Previously named **AI Policy Terms Analyzer**. Applied analysis tooling for policy documents, privacy terms, service dependencies, and platform signals.
 
 </td>
 <td width="50%" valign="top">
 
-### AI Policy & Terms Analyzer
-Applied Python tooling for analysing policy documents, privacy terms, service dependencies, and platform signals.
+### Research Repo
+Structured research workspace for collecting, testing, and organising ideas, references, and implementation paths.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### Humanizer
+Writing and communication tooling designed to improve clarity, structure, and human readability.
+
+</td>
+<td width="50%" valign="top">
+
+### TrainKit
+Tooling for structured training data, validation workflows, and disciplined build processes.
 
 </td>
 </tr>
@@ -47,9 +61,11 @@ Applied Python tooling for analysing policy documents, privacy terms, service de
 
 ### Repositories
 - [KinSync](https://github.com/9TEVE-O/KinSync)
-- [ClawKitchen](https://github.com/9TEVE-O/ClawKitchen)
-- [ClawRecipes](https://github.com/9TEVE-O/ClawRecipes)
-- [AI-Policy-Terms-Analyzer](https://github.com/9TEVE-O/AI-Policy-Terms-Analyzer)
+- Able to Answer
+- [Able to Analyze](https://github.com/9TEVE-O/AI-Policy-Terms-Analyzer)
+- [Research Repo](https://github.com/9TEVE-O/Research_Repo)
+- Humanizer
+- [TrainKit](https://github.com/9TEVE-O/TrainKit)
 
 ---
 
