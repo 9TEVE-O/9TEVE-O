@@ -19,7 +19,7 @@ I build original AI software, product workflows, and local-first tools that turn
 
 ---
 
-## Original Public Work
+## Original Public Work ✦
 
 <table>
 <tr>
@@ -86,7 +86,7 @@ A growing body of work around app scaffolds, AI-assisted workflows, research too
 
 ---
 
-## Active Build Areas
+## Active Build Areas ⚙️
 
 <table>
 <tr>
@@ -116,7 +116,7 @@ Music-adjacent software, creator workflows, and AI systems shaped by real produc
 
 ---
 
-## Private and In-Progress Work
+## Private and In-Progress Work 🛠️
 
 Some projects are still private, experimental, or being prepared for public release. Current build themes include:
 
@@ -139,7 +139,7 @@ GitHub        source control · documentation · public build record
 
 ---
 
-## Working Style
+## Working Style 🎛️
 
 I like software that is direct, useful, and legible. The best tools should explain themselves quickly, run predictably, and make hard work easier to repeat. My goal is to build systems that feel practical to developers, understandable to collaborators, and valuable to the people using them.
 
