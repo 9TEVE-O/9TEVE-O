@@ -107,17 +107,6 @@ Music-adjacent software, creator workflows, and AI systems shaped by real produc
 
 ---
 
-## Private and In-Progress Work 🛠️
-
-Some projects are still private, experimental, or being prepared for public release. Current build themes include:
-
-- Able to Answer: AI answer workflows and product behaviour
-- Humanizer: writing and communication tooling for clarity and readability
-- TrainKit: structured training data, validation, and disciplined build workflows
-- Music-tech tools: AI-assisted workflows for producers, artists, and creative operators
-
----
-
 ## Core Stack
 
 ```text
@@ -125,15 +114,12 @@ Python        document tooling · analysis · validation · automation
 TypeScript    product interfaces · app scaffolds · workflow systems
 Next.js       frontend applications · SaaS-style product shells
 Node.js       local services · API workflows · developer tooling
-GitHub        source control · documentation · public build record
-```
 
 ---
 
 ## Working Style 🎛️
 
-I like software that is direct, useful, and legible. The best tools should explain themselves quickly, run predictably, and make hard work easier to repeat. My goal is to build systems that feel practical to developers, understandable to collaborators, and valuable to the people using them.
-
+I like people, new to software that is direct and usefull. The best tools should explain themselves quickly [like brian], run predictably [what I thought it was going to do], and make hard work easier to repeat. I am standing on the shoulders of giants with these gizmos [AI systems] and gadgets [AI systems that fix the AI systems] My goal is to build systems that feel practical to developers, understandable to collaborators [and me], and value to the people using them [except Scott...He's a D*ck]
 ---
 
 <div align="center">
