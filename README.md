@@ -1,11 +1,12 @@
 <div align="center">
 
-# Steven Lees
+# Substeveø
 
-### AI App Developer · Python Workflow Builder · Music-Tech Operator
+### These pretzels are making me thirsty 
 
 <p>
-I build original AI software, product workflows, and local-first tools that turn complex work into usable systems. My focus is practical: Python-led automation, agent workflows, document intelligence, structured research, and creative technology built with clear interfaces and readable foundations.
+Hi. Someone left the door open. Father of 2 boys and wanted to know WTF are the kids future with all the AI bizzo going to be like? Ended up here. Broke some shiny stuff. Spoke to a robot (actually spoke to a dozen)  Made some plastic stuff for out there. 
+
 </p>
 
 <p>
@@ -34,22 +35,11 @@ Family coordination software shaped as a production-minded SaaS scaffold: struct
 </td>
 <td width="50%" valign="top">
 
-### ClawRecipes
-
-CLI-first recipe system for scaffolding specialist agents and teams from Markdown. Built around durable, file-first workflows that can be inspected, versioned, and reused.
-
-<a href="https://github.com/9TEVE-O/ClawRecipes">View repository</a>
-
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 
-### ClawKitchen
-
-Local-first interface for managing OpenClaw recipe and team workflows. It gives agent scaffolding a cleaner operational surface for real use.
-
-<a href="https://github.com/9TEVE-O/ClawKitchen">View repository</a>
 
 </td>
 <td width="50%" valign="top">
