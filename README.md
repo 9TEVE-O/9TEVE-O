@@ -119,7 +119,8 @@ Node.js       local services · API workflows · developer tooling
 
 ## Working Style 🎛️
 
-I like people, new to software that is direct and usefull. The best tools should explain themselves quickly [like brian], run predictably [what I thought it was going to do], and make hard work easier to repeat. I am standing on the shoulders of giants with these gizmos [AI systems] and gadgets [AI systems that fix the AI systems] My goal is to build systems that feel practical to developers, understandable to collaborators [and me], and value to the people using them [except Scott...He's a D*ck]
+New to software so I work with tools that are direct and usefull. The best tools should explain themselves quickly [like brian], run predictably [what I thought it was going to do], and make hard work easier to repeat. I am standing on the shoulders of giants with these gizmos [AI systems] and gadgets [AI systems that fix the AI systems] My goal is to build systems that feel practical to developers, understandable to collaborators [and me], and value to the people using them [except Scott...He's a D*ck]
+
 ---
 
 <div align="center">
