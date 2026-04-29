@@ -19,7 +19,7 @@ I build original AI software, product workflows, and local-first tools that turn
 
 ---
 
-## Original Public Work ✦
+## Public Work ✦
 
 <table>
 <tr>
