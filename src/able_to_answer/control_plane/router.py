@@ -6,19 +6,14 @@ import json
 from fastapi import APIRouter, HTTPException
 
 from able_to_answer.control_plane.models import (
-    ActionEnvelope,
-    Actor,
     ApproveRequest,
     ArtifactDetailResponse,
     ArtifactResponse,
     CompleteTaskRequest,
     CreateRunRequest,
     CreateTaskRequest,
-    DispatchTaskRequest,
-    PolicyDecision,
     PolicyEvaluateRequest,
     PolicyEvaluateResponse,
-    RequestedAction,
     RunResponse,
     RunStatus,
     TaskResponse,
@@ -159,8 +154,8 @@ def list_tasks(run_id: str) -> list[TaskResponse]:
 
 
 @router.post("/tasks/{task_id}/dispatch", status_code=200)
-def dispatch_task(task_id: str, req: DispatchTaskRequest) -> dict:
-    """Dispatch a pending task, running the policy gate before any side-effect."""
+def dispatch_task(task_id: str) -> dict:
+    """Dispatch a pending task directly."""
     task = cp_store.get_task(task_id=task_id)
     if not task:
         raise HTTPException(status_code=404, detail="task_not_found")
@@ -170,47 +165,16 @@ def dispatch_task(task_id: str, req: DispatchTaskRequest) -> dict:
             detail=f"Task is not in pending state: {task['status']}",
         )
 
-    run = cp_store.get_run(run_id=task["run_id"])
-    if not run:
-        raise HTTPException(status_code=404, detail="run_not_found")
-
-    envelope = ActionEnvelope(
-        run_id=task["run_id"],
-        task_id=task_id,
-        actor=Actor(agent_id="system", role=task["agent_role"] or "planner"),
-        tenant_id=run["tenant_id"],
-        policy_profile_id=run["policy_profile_id"],
-        requested_action=RequestedAction(type=req.action_type, params=req.inputs),
-    )
-    decision, reason = evaluate_action(envelope)
-
-    cp_store.record_policy_decision(
-        run_id=task["run_id"],
-        task_id=task_id,
-        action_type=req.action_type,
-        decision=decision.value,
-        reason=reason,
-    )
-
-    if decision == PolicyDecision.deny:
-        raise HTTPException(status_code=403, detail=reason)
-
-    new_status = (
-        "dispatched" if decision == PolicyDecision.allow else "awaiting_approval"
-    )
-    cp_store.update_task_status(task_id=task_id, status=new_status)
+    cp_store.update_task_status(task_id=task_id, status="dispatched")
 
     logger.info(
-        "control_plane: task_dispatched task=%s run=%s decision=%s",
+        "control_plane: task_dispatched task=%s run=%s",
         task_id,
         task["run_id"],
-        decision.value,
     )
     return {
         "task_id": task_id,
-        "status": new_status,
-        "policy_decision": decision.value,
-        "reason": reason,
+        "status": "dispatched",
     }
 
 

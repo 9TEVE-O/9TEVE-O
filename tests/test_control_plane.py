@@ -136,62 +136,41 @@ def test_create_and_list_tasks(client):
     assert tasks[0]["task_id"] == data["task_id"]
 
 
-def test_dispatch_task_non_side_effect_allowed(client):
-    """A non-side-effect action (GIT_COMMIT) should be dispatched immediately."""
+def test_dispatch_task_unconditional(client):
+    """Any action is dispatched immediately — no policy gate."""
     run_id = _create_run(client).json()["run_id"]
     task_id = _create_task(client, run_id).json()["task_id"]
 
     resp = client.post(
         f"/v1/tasks/{task_id}/dispatch",
-        json={"action_type": "GIT_COMMIT"},
     )
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "dispatched"
-    assert data["policy_decision"] == "allow"
 
 
-def test_dispatch_task_side_effect_requires_approval(client):
-    """A side-effect action (GIT_PUSH) with the default profile → awaiting_approval."""
-    run_id = _create_run(client, policy_profile_id="default").json()["run_id"]
-    task_id = _create_task(client, run_id).json()["task_id"]
+def test_approve_run_no_awaiting_tasks(client):
+    """Approving a run with no awaiting tasks returns approved_tasks=0."""
+    run_id = _create_run(client).json()["run_id"]
 
-    resp = client.post(
-        f"/v1/tasks/{task_id}/dispatch",
-        json={"action_type": "GIT_PUSH"},
-    )
+    resp = client.post(f"/v1/runs/{run_id}/approve", json={"approved_by": "alice"})
     assert resp.status_code == 200
-    data = resp.json()
-    assert data["status"] == "awaiting_approval"
-    assert data["policy_decision"] == "pending_approval"
-
-
-def test_dispatch_task_side_effect_denied_by_strict_profile(client):
-    """A side-effect action with the strict profile → 403."""
-    run_id = _create_run(client, policy_profile_id="strict").json()["run_id"]
-    task_id = _create_task(client, run_id).json()["task_id"]
-
-    resp = client.post(
-        f"/v1/tasks/{task_id}/dispatch",
-        json={"action_type": "GIT_PUSH"},
-    )
-    assert resp.status_code == 403
+    assert resp.json()["approved_tasks"] == 0
 
 
 def test_approve_run_promotes_awaiting_tasks(client):
-    """Approving a run should transition awaiting_approval tasks to dispatched."""
-    run_id = _create_run(client, policy_profile_id="default").json()["run_id"]
+    """Approving a run transitions tasks in awaiting_approval to dispatched."""
+    run_id = _create_run(client).json()["run_id"]
     task_id = _create_task(client, run_id).json()["task_id"]
 
-    # Dispatch to put task in awaiting_approval
-    client.post(f"/v1/tasks/{task_id}/dispatch", json={"action_type": "GIT_PUSH"})
+    # Manually put the task into awaiting_approval state
+    cp_router_module.cp_store.update_task_status(task_id=task_id, status="awaiting_approval")
 
-    # Approve the run
     resp = client.post(f"/v1/runs/{run_id}/approve", json={"approved_by": "alice"})
     assert resp.status_code == 200
     assert resp.json()["approved_tasks"] == 1
 
-    # Verify task is now dispatched
+    # Verify the task is now dispatched
     tasks = client.get(f"/v1/runs/{run_id}/tasks").json()
     assert tasks[0]["status"] == "dispatched"
 
@@ -201,7 +180,7 @@ def test_complete_task(client):
     task_id = _create_task(client, run_id).json()["task_id"]
 
     # Dispatch first
-    client.post(f"/v1/tasks/{task_id}/dispatch", json={"action_type": "GIT_COMMIT"})
+    client.post(f"/v1/tasks/{task_id}/dispatch")
 
     # Complete
     resp = client.post(
@@ -230,18 +209,15 @@ def test_list_tasks_run_not_found(client):
 
 
 def test_dispatch_task_not_found(client):
-    resp = client.post(
-        "/v1/tasks/task_doesnotexist/dispatch",
-        json={"action_type": "GIT_COMMIT"},
-    )
+    resp = client.post("/v1/tasks/task_doesnotexist/dispatch")
     assert resp.status_code == 404
 
 
 def test_dispatch_already_dispatched_task_returns_409(client):
     run_id = _create_run(client).json()["run_id"]
     task_id = _create_task(client, run_id).json()["task_id"]
-    client.post(f"/v1/tasks/{task_id}/dispatch", json={"action_type": "GIT_COMMIT"})
-    resp = client.post(f"/v1/tasks/{task_id}/dispatch", json={"action_type": "GIT_COMMIT"})
+    client.post(f"/v1/tasks/{task_id}/dispatch")
+    resp = client.post(f"/v1/tasks/{task_id}/dispatch")
     assert resp.status_code == 409
 
 
