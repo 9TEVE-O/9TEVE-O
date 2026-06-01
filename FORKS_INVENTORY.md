@@ -1,7 +1,7 @@
 # 🍴 Fork Inventory — Memory Bank
 
-> Auto-generated 2026-05-25 10:22 UTC by `scripts/fork_inventory.py`.
-> Total forks: **85** · Top batch for deep work: **8**
+> Auto-generated 2026-06-01 11:49 UTC by `scripts/fork_inventory.py`.
+> Total forks: **93** · Top batch for deep work: **8**
 
 ---
 
@@ -9,14 +9,14 @@
 
 | Rank | Repository | Lang | ⭐ Stars | Score | Keywords |
 | ---- | ---------- | ---- | ------- | ----- | -------- |
-| 🥇 | [9TEVE-O/agent-skills](https://github.com/9TEVE-O/agent-skills) | Shell | 1 | 6.3/10 | ai, agent |
-| 🥈 | [9TEVE-O/claude-code](https://github.com/9TEVE-O/claude-code) | Shell | 1 | 6.3/10 | ai, agent, workflow |
-| 🥉 | [9TEVE-O/everything-claude-code](https://github.com/9TEVE-O/everything-claude-code) | JavaScript | 1 | 6.3/10 | agent, security |
-| #4 | [9TEVE-O/goose](https://github.com/9TEVE-O/goose) | Rust | 1 | 6.3/10 | ai, agent, llm |
-| #5 | [9TEVE-O/awesome-claude-skills](https://github.com/9TEVE-O/awesome-claude-skills) | Python | 0 | 6.0/10 | ai, workflow |
-| #6 | [9TEVE-O/ClawRecipes](https://github.com/9TEVE-O/ClawRecipes) | TypeScript | 0 | 6.0/10 | ai, agent |
-| #7 | [9TEVE-O/composio](https://github.com/9TEVE-O/composio) | Unknown | 0 | 6.0/10 | ai, agent |
-| #8 | [9TEVE-O/deepagents](https://github.com/9TEVE-O/deepagents) | Unknown | 0 | 6.0/10 | ai, agent, langchain |
+| 🥇 | [9TEVE-O/claude-code](https://github.com/9TEVE-O/claude-code) | Shell | 1 | 7.3/10 | ai, agent, workflow |
+| 🥈 | [9TEVE-O/openai-chatkit-starter-app](https://github.com/9TEVE-O/openai-chatkit-starter-app) | TypeScript | 1 | 7.3/10 | ai, agent, openai |
+| 🥉 | [9TEVE-O/agent-skills](https://github.com/9TEVE-O/agent-skills) | TypeScript | 1 | 6.3/10 | ai, agent |
+| #4 | [9TEVE-O/everything-claude-code](https://github.com/9TEVE-O/everything-claude-code) | JavaScript | 1 | 6.3/10 | agent, security |
+| #5 | [9TEVE-O/goose](https://github.com/9TEVE-O/goose) | Rust | 1 | 6.3/10 | ai, agent, llm |
+| #6 | [9TEVE-O/awesome-claude-skills](https://github.com/9TEVE-O/awesome-claude-skills) | Python | 0 | 6.0/10 | ai, workflow |
+| #7 | [9TEVE-O/claude-skills](https://github.com/9TEVE-O/claude-skills) | Unknown | 0 | 6.0/10 | ai, agent |
+| #8 | [9TEVE-O/composio](https://github.com/9TEVE-O/composio) | Unknown | 0 | 6.0/10 | ai, agent |
 
 ---
 
@@ -24,91 +24,99 @@
 
 | # | Repository | Lang | ⭐ Stars | Last Push | Score | Parent |
 | - | ---------- | ---- | ------- | --------- | ----- | ------ |
-| 1 | [9TEVE-O/agent-skills](https://github.com/9TEVE-O/agent-skills) | Shell | 1 | 2026-05-24 | 6.3/10 | — |
-| 2 | [9TEVE-O/claude-code](https://github.com/9TEVE-O/claude-code) | Shell | 1 | 2026-03-02 | 6.3/10 | — |
-| 3 | [9TEVE-O/everything-claude-code](https://github.com/9TEVE-O/everything-claude-code) | JavaScript | 1 | 2026-05-24 | 6.3/10 | — |
-| 4 | [9TEVE-O/goose](https://github.com/9TEVE-O/goose) | Rust | 1 | 2026-04-19 | 6.3/10 | — |
-| 5 | [9TEVE-O/awesome-claude-skills](https://github.com/9TEVE-O/awesome-claude-skills) | Python | 0 | 2026-05-08 | 6.0/10 | — |
-| 6 | [9TEVE-O/ClawRecipes](https://github.com/9TEVE-O/ClawRecipes) | TypeScript | 0 | 2026-04-25 | 6.0/10 | — |
-| 7 | [9TEVE-O/composio](https://github.com/9TEVE-O/composio) | Unknown | 0 | 2026-05-17 | 6.0/10 | — |
-| 8 | [9TEVE-O/deepagents](https://github.com/9TEVE-O/deepagents) | Unknown | 0 | 2026-04-10 | 6.0/10 | — |
-| 9 | [9TEVE-O/deer-flow](https://github.com/9TEVE-O/deer-flow) | Python | 0 | 2026-04-25 | 6.0/10 | — |
+| 1 | [9TEVE-O/claude-code](https://github.com/9TEVE-O/claude-code) | Shell | 1 | 2026-05-26 | 7.3/10 | — |
+| 2 | [9TEVE-O/openai-chatkit-starter-app](https://github.com/9TEVE-O/openai-chatkit-starter-app) | TypeScript | 1 | 2026-06-01 | 7.3/10 | — |
+| 3 | [9TEVE-O/agent-skills](https://github.com/9TEVE-O/agent-skills) | TypeScript | 1 | 2026-05-30 | 6.3/10 | — |
+| 4 | [9TEVE-O/everything-claude-code](https://github.com/9TEVE-O/everything-claude-code) | JavaScript | 1 | 2026-05-24 | 6.3/10 | — |
+| 5 | [9TEVE-O/goose](https://github.com/9TEVE-O/goose) | Rust | 1 | 2026-04-19 | 6.3/10 | — |
+| 6 | [9TEVE-O/awesome-claude-skills](https://github.com/9TEVE-O/awesome-claude-skills) | Python | 0 | 2026-05-08 | 6.0/10 | — |
+| 7 | [9TEVE-O/claude-skills](https://github.com/9TEVE-O/claude-skills) | Unknown | 0 | 2026-05-28 | 6.0/10 | — |
+| 8 | [9TEVE-O/composio](https://github.com/9TEVE-O/composio) | Unknown | 0 | 2026-05-17 | 6.0/10 | — |
+| 9 | [9TEVE-O/deepagents](https://github.com/9TEVE-O/deepagents) | Unknown | 0 | 2026-04-10 | 6.0/10 | — |
 | 10 | [9TEVE-O/open-saas](https://github.com/9TEVE-O/open-saas) | Unknown | 0 | 2026-04-06 | 6.0/10 | — |
-| 11 | [9TEVE-O/openai-cookbook](https://github.com/9TEVE-O/openai-cookbook) | Unknown | 0 | 2026-05-01 | 6.0/10 | — |
-| 12 | [9TEVE-O/plugins](https://github.com/9TEVE-O/plugins) | Unknown | 0 | 2026-05-16 | 6.0/10 | — |
-| 13 | [9TEVE-O/autoresearch](https://github.com/9TEVE-O/autoresearch) | Unknown | 2 | 2026-03-09 | 5.5/10 | — |
-| 14 | [9TEVE-O/kilocode](https://github.com/9TEVE-O/kilocode) | TypeScript | 2 | 2026-05-01 | 5.5/10 | — |
-| 15 | [9TEVE-O/flutter-ai-rules](https://github.com/9TEVE-O/flutter-ai-rules) | Unknown | 1 | 2026-03-15 | 5.3/10 | — |
-| 16 | [9TEVE-O/hermes-agent](https://github.com/9TEVE-O/hermes-agent) | Python | 1 | 2026-05-22 | 5.3/10 | — |
-| 17 | [9TEVE-O/nanochat](https://github.com/9TEVE-O/nanochat) | Unknown | 1 | 2026-05-05 | 5.3/10 | — |
-| 18 | [9TEVE-O/SWE-AF](https://github.com/9TEVE-O/SWE-AF) | Python | 1 | 2026-04-15 | 5.3/10 | — |
-| 19 | [9TEVE-O/tinyfish-cookbook](https://github.com/9TEVE-O/tinyfish-cookbook) | Unknown | 1 | 2026-05-19 | 5.3/10 | — |
-| 20 | [9TEVE-O/android-security-awesome](https://github.com/9TEVE-O/android-security-awesome) | Unknown | 0 | 2026-05-18 | 5.0/10 | — |
-| 21 | [9TEVE-O/Awesome-Hacking](https://github.com/9TEVE-O/Awesome-Hacking) | Unknown | 0 | 2026-05-07 | 5.0/10 | — |
-| 22 | [9TEVE-O/cheat-on-content](https://github.com/9TEVE-O/cheat-on-content) | Unknown | 0 | 2026-05-14 | 5.0/10 | — |
+| 11 | [9TEVE-O/plugins](https://github.com/9TEVE-O/plugins) | Unknown | 0 | 2026-05-16 | 6.0/10 | — |
+| 12 | [9TEVE-O/autoresearch](https://github.com/9TEVE-O/autoresearch) | Unknown | 2 | 2026-03-09 | 5.5/10 | — |
+| 13 | [9TEVE-O/flutter-ai-rules](https://github.com/9TEVE-O/flutter-ai-rules) | Unknown | 1 | 2026-03-15 | 5.3/10 | — |
+| 14 | [9TEVE-O/hermes-agent](https://github.com/9TEVE-O/hermes-agent) | Python | 1 | 2026-05-22 | 5.3/10 | — |
+| 15 | [9TEVE-O/nanochat](https://github.com/9TEVE-O/nanochat) | Unknown | 1 | 2026-05-05 | 5.3/10 | — |
+| 16 | [9TEVE-O/SWE-AF](https://github.com/9TEVE-O/SWE-AF) | Python | 1 | 2026-04-15 | 5.3/10 | — |
+| 17 | [9TEVE-O/tinyfish-cookbook](https://github.com/9TEVE-O/tinyfish-cookbook) | TypeScript | 1 | 2026-06-01 | 5.3/10 | — |
+| 18 | [9TEVE-O/android-security-awesome](https://github.com/9TEVE-O/android-security-awesome) | Unknown | 0 | 2026-05-18 | 5.0/10 | — |
+| 19 | [9TEVE-O/Awesome-Hacking](https://github.com/9TEVE-O/Awesome-Hacking) | Unknown | 0 | 2026-05-07 | 5.0/10 | — |
+| 20 | [9TEVE-O/cheat-on-content](https://github.com/9TEVE-O/cheat-on-content) | Unknown | 0 | 2026-05-14 | 5.0/10 | — |
+| 21 | [9TEVE-O/ClawRecipes](https://github.com/9TEVE-O/ClawRecipes) | TypeScript | 0 | 2026-04-25 | 5.0/10 | — |
+| 22 | [9TEVE-O/deer-flow](https://github.com/9TEVE-O/deer-flow) | Python | 0 | 2026-04-25 | 5.0/10 | — |
 | 23 | [9TEVE-O/gateway](https://github.com/9TEVE-O/gateway) | Unknown | 0 | 2026-03-14 | 5.0/10 | — |
-| 24 | [9TEVE-O/jiuwenclaw](https://github.com/9TEVE-O/jiuwenclaw) | Unknown | 0 | 2026-04-04 | 5.0/10 | — |
-| 25 | [9TEVE-O/manus-skills](https://github.com/9TEVE-O/manus-skills) | Unknown | 0 | 2026-04-10 | 5.0/10 | — |
-| 26 | [9TEVE-O/prompts.chat](https://github.com/9TEVE-O/prompts.chat) | Unknown | 0 | 2026-05-22 | 5.0/10 | — |
-| 27 | [9TEVE-O/web-ai-demos](https://github.com/9TEVE-O/web-ai-demos) | JavaScript | 0 | 2026-05-04 | 5.0/10 | — |
-| 28 | [9TEVE-O/claude-code-templates](https://github.com/9TEVE-O/claude-code-templates) | Unknown | 1 | 2026-05-17 | 4.3/10 | — |
-| 29 | [9TEVE-O/codex](https://github.com/9TEVE-O/codex) | Unknown | 1 | 2026-04-09 | 4.3/10 | — |
-| 30 | [9TEVE-O/expo](https://github.com/9TEVE-O/expo) | Unknown | 1 | 2026-04-09 | 4.3/10 | — |
-| 31 | [9TEVE-O/gumroad](https://github.com/9TEVE-O/gumroad) | Unknown | 1 | 2026-05-22 | 4.3/10 | — |
-| 32 | [9TEVE-O/LiteRT-LM](https://github.com/9TEVE-O/LiteRT-LM) | Unknown | 1 | 2026-05-13 | 4.3/10 | — |
-| 33 | [9TEVE-O/MindEaseCaitlin](https://github.com/9TEVE-O/MindEaseCaitlin) | Python | 1 | 2026-04-06 | 4.3/10 | — |
-| 34 | [9TEVE-O/NeMo-Agent-Toolkit](https://github.com/9TEVE-O/NeMo-Agent-Toolkit) | Unknown | 1 | 2026-01-29 | 4.3/10 | — |
-| 35 | [9TEVE-O/starter-applets](https://github.com/9TEVE-O/starter-applets) | JavaScript | 1 | 2026-03-26 | 4.3/10 | — |
-| 36 | [9TEVE-O/androidify](https://github.com/9TEVE-O/androidify) | Unknown | 0 | 2026-05-16 | 4.0/10 | — |
-| 37 | [9TEVE-O/bolt.diy_subzteve-](https://github.com/9TEVE-O/bolt.diy_subzteve-) | Unknown | 0 | 2025-09-16 | 4.0/10 | — |
-| 38 | [9TEVE-O/ClawKitchen](https://github.com/9TEVE-O/ClawKitchen) | TypeScript | 0 | 2026-04-24 | 4.0/10 | — |
-| 39 | [9TEVE-O/comp](https://github.com/9TEVE-O/comp) | TypeScript | 0 | 2026-03-03 | 4.0/10 | — |
-| 40 | [9TEVE-O/deepwiki-open](https://github.com/9TEVE-O/deepwiki-open) | Unknown | 0 | 2026-04-21 | 4.0/10 | — |
-| 41 | [9TEVE-O/Hegelion](https://github.com/9TEVE-O/Hegelion) | Unknown | 0 | 2026-03-15 | 4.0/10 | — |
-| 42 | [9TEVE-O/jax](https://github.com/9TEVE-O/jax) | Unknown | 0 | 2026-03-30 | 4.0/10 | — |
-| 43 | [9TEVE-O/opencode](https://github.com/9TEVE-O/opencode) | Unknown | 0 | 2026-04-04 | 4.0/10 | — |
-| 44 | [9TEVE-O/opensource.guide](https://github.com/9TEVE-O/opensource.guide) | Unknown | 0 | 2026-04-30 | 4.0/10 | — |
-| 45 | [9TEVE-O/registry](https://github.com/9TEVE-O/registry) | Unknown | 0 | 2026-05-21 | 4.0/10 | — |
-| 46 | [9TEVE-O/awesome-github-wiki](https://github.com/9TEVE-O/awesome-github-wiki) | Unknown | 1 | 2026-03-29 | 3.3/10 | — |
-| 47 | [9TEVE-O/awesome-python](https://github.com/9TEVE-O/awesome-python) | Python | 1 | 2026-03-03 | 3.3/10 | — |
-| 48 | [9TEVE-O/awesome-selfhosted](https://github.com/9TEVE-O/awesome-selfhosted) | Python | 1 | 2026-03-07 | 3.3/10 | — |
-| 49 | [9TEVE-O/cosmos-cookbook](https://github.com/9TEVE-O/cosmos-cookbook) | Unknown | 1 | 2026-02-06 | 3.3/10 | — |
-| 50 | [9TEVE-O/DeepResearch](https://github.com/9TEVE-O/DeepResearch) | Unknown | 1 | 2026-02-07 | 3.3/10 | — |
-| 51 | [9TEVE-O/awesome-smart-contract-analysis-tools](https://github.com/9TEVE-O/awesome-smart-contract-analysis-tools) | Unknown | 0 | 2026-03-03 | 3.0/10 | — |
-| 52 | [9TEVE-O/clawdbot-formal-models](https://github.com/9TEVE-O/clawdbot-formal-models) | TLA | 0 | 2026-04-18 | 3.0/10 | — |
-| 53 | [9TEVE-O/codelab-android-kmp](https://github.com/9TEVE-O/codelab-android-kmp) | Unknown | 0 | 2026-03-23 | 3.0/10 | — |
-| 54 | [9TEVE-O/docs](https://github.com/9TEVE-O/docs) | TypeScript | 0 | 2026-02-27 | 3.0/10 | — |
-| 55 | [9TEVE-O/linear---9TEVE-O-](https://github.com/9TEVE-O/linear---9TEVE-O-) | Unknown | 0 | 2026-04-18 | 3.0/10 | — |
-| 56 | [9TEVE-O/n8n](https://github.com/9TEVE-O/n8n) | Unknown | 0 | 2026-01-30 | 3.0/10 | — |
-| 57 | [9TEVE-O/openai-chatkit-starter-app](https://github.com/9TEVE-O/openai-chatkit-starter-app) | Unknown | 0 | 2025-11-21 | 3.0/10 | — |
-| 58 | [9TEVE-O/vscode-deno](https://github.com/9TEVE-O/vscode-deno) | TypeScript | 0 | 2026-03-02 | 3.0/10 | — |
-| 59 | [9TEVE-O/Waver](https://github.com/9TEVE-O/Waver) | Unknown | 0 | 2026-03-27 | 3.0/10 | — |
-| 60 | [9TEVE-O/web-vitals](https://github.com/9TEVE-O/web-vitals) | JavaScript | 0 | 2026-03-02 | 3.0/10 | — |
-| 61 | [9TEVE-O/copilot-cli](https://github.com/9TEVE-O/copilot-cli) | Unknown | 0 | 2026-01-24 | 2.0/10 | — |
-| 62 | [9TEVE-O/firecrawl](https://github.com/9TEVE-O/firecrawl) | Unknown | 0 | 2026-01-10 | 2.0/10 | — |
-| 63 | [9TEVE-O/gemini-cli](https://github.com/9TEVE-O/gemini-cli) | Unknown | 0 | 2026-02-18 | 2.0/10 | — |
-| 64 | [9TEVE-O/terraform-genai-knowledge-base](https://github.com/9TEVE-O/terraform-genai-knowledge-base) | Unknown | 0 | 2025-12-11 | 2.0/10 | — |
-| 65 | [9TEVE-O/tools](https://github.com/9TEVE-O/tools) | Unknown | 0 | 2025-07-18 | 2.0/10 | — |
-| 66 | [9TEVE-O/lobehub](https://github.com/9TEVE-O/lobehub) | Unknown | 1 | 2026-01-30 | 1.3/10 | — |
-| 67 | [9TEVE-O/prefect](https://github.com/9TEVE-O/prefect) | Unknown | 1 | 2026-01-12 | 1.3/10 | — |
-| 68 | [9TEVE-O/openapi-ts](https://github.com/9TEVE-O/openapi-ts) | Unknown | 0 | 2026-01-21 | 1.0/10 | — |
-| 69 | [9TEVE-O/OpenHands](https://github.com/9TEVE-O/OpenHands) | Unknown | 0 | 2026-01-21 | 1.0/10 | — |
-| 70 | [9TEVE-O/SpiderID_APP](https://github.com/9TEVE-O/SpiderID_APP) | Unknown | 0 | 2023-12-13 | 1.0/10 | — |
-| 71 | [9TEVE-O/vault](https://github.com/9TEVE-O/vault) | Unknown | 1 | 2026-01-30 | 0.3/10 | — |
-| 72 | [9TEVE-O/api](https://github.com/9TEVE-O/api) | Unknown | 0 | 2026-01-26 | 0.0/10 | — |
-| 73 | [9TEVE-O/aucloud.github.io](https://github.com/9TEVE-O/aucloud.github.io) | Unknown | 0 | 2025-11-13 | 0.0/10 | — |
-| 74 | [9TEVE-O/demucs](https://github.com/9TEVE-O/demucs) | Unknown | 0 | 2024-04-24 | 0.0/10 | — |
-| 75 | [9TEVE-O/doodle-trace](https://github.com/9TEVE-O/doodle-trace) | Unknown | 0 | 2026-01-22 | 0.0/10 | — |
-| 76 | [9TEVE-O/git-lfs](https://github.com/9TEVE-O/git-lfs) | Unknown | 0 | 2026-02-01 | 0.0/10 | — |
-| 77 | [9TEVE-O/hackingtool](https://github.com/9TEVE-O/hackingtool) | Unknown | 0 | 2025-10-14 | 0.0/10 | — |
-| 78 | [9TEVE-O/json-formatter](https://github.com/9TEVE-O/json-formatter) | Unknown | 0 | 2026-01-20 | 0.0/10 | — |
-| 79 | [9TEVE-O/lighthouse](https://github.com/9TEVE-O/lighthouse) | Unknown | 0 | 2026-01-24 | 0.0/10 | — |
-| 80 | [9TEVE-O/lighthouse-ci](https://github.com/9TEVE-O/lighthouse-ci) | Unknown | 0 | 2025-06-26 | 0.0/10 | — |
-| 81 | [9TEVE-O/personaplex](https://github.com/9TEVE-O/personaplex) | Unknown | 0 | 2026-01-24 | 0.0/10 | — |
-| 82 | [9TEVE-O/refined-github](https://github.com/9TEVE-O/refined-github) | Unknown | 0 | 2026-02-05 | 0.0/10 | — |
-| 83 | [9TEVE-O/speedline](https://github.com/9TEVE-O/speedline) | JavaScript | 0 | 2026-01-26 | 0.0/10 | — |
-| 84 | [9TEVE-O/tauri](https://github.com/9TEVE-O/tauri) | Unknown | 0 | 2026-02-04 | 0.0/10 | — |
-| 85 | [9TEVE-O/vscode-cpptools](https://github.com/9TEVE-O/vscode-cpptools) | Unknown | 0 | 2026-01-26 | 0.0/10 | — |
+| 24 | [9TEVE-O/gentle-ai](https://github.com/9TEVE-O/gentle-ai) | Unknown | 0 | 2026-05-27 | 5.0/10 | — |
+| 25 | [9TEVE-O/jiuwenclaw](https://github.com/9TEVE-O/jiuwenclaw) | Unknown | 0 | 2026-04-04 | 5.0/10 | — |
+| 26 | [9TEVE-O/manus-skills](https://github.com/9TEVE-O/manus-skills) | Unknown | 0 | 2026-04-10 | 5.0/10 | — |
+| 27 | [9TEVE-O/OpenADE](https://github.com/9TEVE-O/OpenADE) | Unknown | 0 | 2026-05-28 | 5.0/10 | — |
+| 28 | [9TEVE-O/openai-cookbook](https://github.com/9TEVE-O/openai-cookbook) | Unknown | 0 | 2026-05-01 | 5.0/10 | — |
+| 29 | [9TEVE-O/prompts.chat](https://github.com/9TEVE-O/prompts.chat) | Unknown | 0 | 2026-05-22 | 5.0/10 | — |
+| 30 | [9TEVE-O/web-ai-demos](https://github.com/9TEVE-O/web-ai-demos) | JavaScript | 0 | 2026-05-04 | 5.0/10 | — |
+| 31 | [9TEVE-O/Webwright](https://github.com/9TEVE-O/Webwright) | Unknown | 0 | 2026-05-29 | 5.0/10 | — |
+| 32 | [9TEVE-O/kilocode](https://github.com/9TEVE-O/kilocode) | TypeScript | 2 | 2026-05-01 | 4.5/10 | — |
+| 33 | [9TEVE-O/claude-code-templates](https://github.com/9TEVE-O/claude-code-templates) | Python | 1 | 2026-05-31 | 4.3/10 | — |
+| 34 | [9TEVE-O/codex](https://github.com/9TEVE-O/codex) | Unknown | 1 | 2026-04-09 | 4.3/10 | — |
+| 35 | [9TEVE-O/expo](https://github.com/9TEVE-O/expo) | Unknown | 1 | 2026-04-09 | 4.3/10 | — |
+| 36 | [9TEVE-O/gumroad](https://github.com/9TEVE-O/gumroad) | Unknown | 1 | 2026-05-22 | 4.3/10 | — |
+| 37 | [9TEVE-O/LiteRT-LM](https://github.com/9TEVE-O/LiteRT-LM) | Unknown | 1 | 2026-05-13 | 4.3/10 | — |
+| 38 | [9TEVE-O/markdownlint-cli2-action](https://github.com/9TEVE-O/markdownlint-cli2-action) | Unknown | 1 | 2026-05-26 | 4.3/10 | — |
+| 39 | [9TEVE-O/MindEaseCaitlin](https://github.com/9TEVE-O/MindEaseCaitlin) | Python | 1 | 2026-04-06 | 4.3/10 | — |
+| 40 | [9TEVE-O/NeMo-Agent-Toolkit](https://github.com/9TEVE-O/NeMo-Agent-Toolkit) | Unknown | 1 | 2026-01-29 | 4.3/10 | — |
+| 41 | [9TEVE-O/starter-applets](https://github.com/9TEVE-O/starter-applets) | JavaScript | 1 | 2026-03-26 | 4.3/10 | — |
+| 42 | [9TEVE-O/vscode-cpptools](https://github.com/9TEVE-O/vscode-cpptools) | TypeScript | 1 | 2026-05-31 | 4.3/10 | — |
+| 43 | [9TEVE-O/academic-research-skills](https://github.com/9TEVE-O/academic-research-skills) | Unknown | 0 | 2026-05-28 | 4.0/10 | — |
+| 44 | [9TEVE-O/andrej-karpathy-skills](https://github.com/9TEVE-O/andrej-karpathy-skills) | Unknown | 0 | 2026-04-20 | 4.0/10 | — |
+| 45 | [9TEVE-O/androidify](https://github.com/9TEVE-O/androidify) | Unknown | 0 | 2026-05-16 | 4.0/10 | — |
+| 46 | [9TEVE-O/bolt.diy_subzteve-](https://github.com/9TEVE-O/bolt.diy_subzteve-) | Unknown | 0 | 2025-09-16 | 4.0/10 | — |
+| 47 | [9TEVE-O/ClawKitchen](https://github.com/9TEVE-O/ClawKitchen) | TypeScript | 0 | 2026-04-24 | 4.0/10 | — |
+| 48 | [9TEVE-O/comp](https://github.com/9TEVE-O/comp) | TypeScript | 0 | 2026-03-03 | 4.0/10 | — |
+| 49 | [9TEVE-O/deepwiki-open](https://github.com/9TEVE-O/deepwiki-open) | Unknown | 0 | 2026-04-21 | 4.0/10 | — |
+| 50 | [9TEVE-O/dolt](https://github.com/9TEVE-O/dolt) | Unknown | 0 | 2026-05-23 | 4.0/10 | — |
+| 51 | [9TEVE-O/Hegelion](https://github.com/9TEVE-O/Hegelion) | Unknown | 0 | 2026-03-15 | 4.0/10 | — |
+| 52 | [9TEVE-O/jax](https://github.com/9TEVE-O/jax) | Unknown | 0 | 2026-03-30 | 4.0/10 | — |
+| 53 | [9TEVE-O/json-formatter](https://github.com/9TEVE-O/json-formatter) | TypeScript | 0 | 2026-06-01 | 4.0/10 | — |
+| 54 | [9TEVE-O/opencode](https://github.com/9TEVE-O/opencode) | Unknown | 0 | 2026-04-04 | 4.0/10 | — |
+| 55 | [9TEVE-O/registry](https://github.com/9TEVE-O/registry) | Unknown | 0 | 2026-05-21 | 4.0/10 | — |
+| 56 | [9TEVE-O/awesome-github-wiki](https://github.com/9TEVE-O/awesome-github-wiki) | Unknown | 1 | 2026-03-29 | 3.3/10 | — |
+| 57 | [9TEVE-O/awesome-python](https://github.com/9TEVE-O/awesome-python) | Python | 1 | 2026-03-03 | 3.3/10 | — |
+| 58 | [9TEVE-O/awesome-selfhosted](https://github.com/9TEVE-O/awesome-selfhosted) | Python | 1 | 2026-03-07 | 3.3/10 | — |
+| 59 | [9TEVE-O/cosmos-cookbook](https://github.com/9TEVE-O/cosmos-cookbook) | Unknown | 1 | 2026-02-06 | 3.3/10 | — |
+| 60 | [9TEVE-O/DeepResearch](https://github.com/9TEVE-O/DeepResearch) | Unknown | 1 | 2026-02-07 | 3.3/10 | — |
+| 61 | [9TEVE-O/awesome-smart-contract-analysis-tools](https://github.com/9TEVE-O/awesome-smart-contract-analysis-tools) | Unknown | 0 | 2026-03-03 | 3.0/10 | — |
+| 62 | [9TEVE-O/clawdbot-formal-models](https://github.com/9TEVE-O/clawdbot-formal-models) | TLA | 0 | 2026-04-18 | 3.0/10 | — |
+| 63 | [9TEVE-O/codelab-android-kmp](https://github.com/9TEVE-O/codelab-android-kmp) | Unknown | 0 | 2026-03-23 | 3.0/10 | — |
+| 64 | [9TEVE-O/linear---9TEVE-O-](https://github.com/9TEVE-O/linear---9TEVE-O-) | Unknown | 0 | 2026-04-18 | 3.0/10 | — |
+| 65 | [9TEVE-O/n8n](https://github.com/9TEVE-O/n8n) | Unknown | 0 | 2026-01-30 | 3.0/10 | — |
+| 66 | [9TEVE-O/opensource.guide](https://github.com/9TEVE-O/opensource.guide) | Unknown | 0 | 2026-04-30 | 3.0/10 | — |
+| 67 | [9TEVE-O/vscode-deno](https://github.com/9TEVE-O/vscode-deno) | TypeScript | 0 | 2026-03-02 | 3.0/10 | — |
+| 68 | [9TEVE-O/Waver](https://github.com/9TEVE-O/Waver) | Unknown | 0 | 2026-03-27 | 3.0/10 | — |
+| 69 | [9TEVE-O/web-vitals](https://github.com/9TEVE-O/web-vitals) | JavaScript | 0 | 2026-03-02 | 3.0/10 | — |
+| 70 | [9TEVE-O/copilot-cli](https://github.com/9TEVE-O/copilot-cli) | Unknown | 0 | 2026-01-24 | 2.0/10 | — |
+| 71 | [9TEVE-O/firecrawl](https://github.com/9TEVE-O/firecrawl) | Unknown | 0 | 2026-01-10 | 2.0/10 | — |
+| 72 | [9TEVE-O/gemini-cli](https://github.com/9TEVE-O/gemini-cli) | Unknown | 0 | 2026-02-18 | 2.0/10 | — |
+| 73 | [9TEVE-O/terraform-genai-knowledge-base](https://github.com/9TEVE-O/terraform-genai-knowledge-base) | Unknown | 0 | 2025-12-11 | 2.0/10 | — |
+| 74 | [9TEVE-O/tools](https://github.com/9TEVE-O/tools) | Unknown | 0 | 2025-07-18 | 2.0/10 | — |
+| 75 | [9TEVE-O/lobehub](https://github.com/9TEVE-O/lobehub) | Unknown | 1 | 2026-01-30 | 1.3/10 | — |
+| 76 | [9TEVE-O/prefect](https://github.com/9TEVE-O/prefect) | Unknown | 1 | 2026-01-12 | 1.3/10 | — |
+| 77 | [9TEVE-O/openapi-ts](https://github.com/9TEVE-O/openapi-ts) | Unknown | 0 | 2026-01-21 | 1.0/10 | — |
+| 78 | [9TEVE-O/OpenHands](https://github.com/9TEVE-O/OpenHands) | Unknown | 0 | 2026-01-21 | 1.0/10 | — |
+| 79 | [9TEVE-O/SpiderID_APP](https://github.com/9TEVE-O/SpiderID_APP) | Unknown | 0 | 2023-12-13 | 1.0/10 | — |
+| 80 | [9TEVE-O/vault](https://github.com/9TEVE-O/vault) | Unknown | 1 | 2026-01-30 | 0.3/10 | — |
+| 81 | [9TEVE-O/api](https://github.com/9TEVE-O/api) | Unknown | 0 | 2026-01-26 | 0.0/10 | — |
+| 82 | [9TEVE-O/aucloud.github.io](https://github.com/9TEVE-O/aucloud.github.io) | Unknown | 0 | 2025-11-13 | 0.0/10 | — |
+| 83 | [9TEVE-O/demucs](https://github.com/9TEVE-O/demucs) | Unknown | 0 | 2024-04-24 | 0.0/10 | — |
+| 84 | [9TEVE-O/docs](https://github.com/9TEVE-O/docs) | TypeScript | 0 | 2026-02-27 | 0.0/10 | — |
+| 85 | [9TEVE-O/doodle-trace](https://github.com/9TEVE-O/doodle-trace) | Unknown | 0 | 2026-01-22 | 0.0/10 | — |
+| 86 | [9TEVE-O/git-lfs](https://github.com/9TEVE-O/git-lfs) | Unknown | 0 | 2026-02-01 | 0.0/10 | — |
+| 87 | [9TEVE-O/hackingtool](https://github.com/9TEVE-O/hackingtool) | Unknown | 0 | 2025-10-14 | 0.0/10 | — |
+| 88 | [9TEVE-O/lighthouse](https://github.com/9TEVE-O/lighthouse) | Unknown | 0 | 2026-01-24 | 0.0/10 | — |
+| 89 | [9TEVE-O/lighthouse-ci](https://github.com/9TEVE-O/lighthouse-ci) | Unknown | 0 | 2025-06-26 | 0.0/10 | — |
+| 90 | [9TEVE-O/personaplex](https://github.com/9TEVE-O/personaplex) | Unknown | 0 | 2026-01-24 | 0.0/10 | — |
+| 91 | [9TEVE-O/refined-github](https://github.com/9TEVE-O/refined-github) | Unknown | 0 | 2026-02-05 | 0.0/10 | — |
+| 92 | [9TEVE-O/speedline](https://github.com/9TEVE-O/speedline) | JavaScript | 0 | 2026-01-26 | 0.0/10 | — |
+| 93 | [9TEVE-O/tauri](https://github.com/9TEVE-O/tauri) | Unknown | 0 | 2026-02-04 | 0.0/10 | — |
 
 ---
 
@@ -116,14 +124,14 @@
 
 | Repository | Stars (0–3) | Recency (0–2) | Relevance (0–3) | Upstream (0–2) | **Total** |
 | ---------- | ----------- | ------------- | --------------- | -------------- | --------- |
+| [claude-code](https://github.com/9TEVE-O/claude-code) | 0.3 | 2.0 | 3.0 | 2.0 | **7.3/10** |
+| [openai-chatkit-starter-app](https://github.com/9TEVE-O/openai-chatkit-starter-app) | 0.3 | 2.0 | 3.0 | 2.0 | **7.3/10** |
 | [agent-skills](https://github.com/9TEVE-O/agent-skills) | 0.3 | 2.0 | 2.0 | 2.0 | **6.3/10** |
-| [claude-code](https://github.com/9TEVE-O/claude-code) | 0.3 | 1.0 | 3.0 | 2.0 | **6.3/10** |
 | [everything-claude-code](https://github.com/9TEVE-O/everything-claude-code) | 0.3 | 2.0 | 2.0 | 2.0 | **6.3/10** |
 | [goose](https://github.com/9TEVE-O/goose) | 0.3 | 1.0 | 3.0 | 2.0 | **6.3/10** |
 | [awesome-claude-skills](https://github.com/9TEVE-O/awesome-claude-skills) | 0.0 | 2.0 | 2.0 | 2.0 | **6.0/10** |
-| [ClawRecipes](https://github.com/9TEVE-O/ClawRecipes) | 0.0 | 2.0 | 2.0 | 2.0 | **6.0/10** |
+| [claude-skills](https://github.com/9TEVE-O/claude-skills) | 0.0 | 2.0 | 2.0 | 2.0 | **6.0/10** |
 | [composio](https://github.com/9TEVE-O/composio) | 0.0 | 2.0 | 2.0 | 2.0 | **6.0/10** |
-| [deepagents](https://github.com/9TEVE-O/deepagents) | 0.0 | 1.0 | 3.0 | 2.0 | **6.0/10** |
 
 ---
 
