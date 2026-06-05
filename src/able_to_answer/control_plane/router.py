@@ -109,7 +109,9 @@ def approve_run(
         raise HTTPException(status_code=404, detail="run_not_found")
 
     task = cp_store.get_task(task_id=req.task_id)
-    if not task or task["run_id"] != run_id:
+    if not task:
+        raise HTTPException(status_code=404, detail="task_not_found")
+    if task["run_id"] != run_id:
         raise HTTPException(status_code=409, detail="approval_task_mismatch")
     if cp_store.get_approval_for_decision(decision_id=req.decision_id):
         raise HTTPException(status_code=409, detail="approval_already_recorded")
