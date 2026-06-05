@@ -153,6 +153,15 @@ def test_dispatch_task_unconditional(client):
 
 
 def _create_pending_approval(client, run_id, task_id, *, action_type="GIT_PUSH"):
+    """
+    Mark the specified task as awaiting human approval and create a corresponding pending policy decision in the test control plane store.
+    
+    Parameters:
+        action_type (str): The type of action that requires approval (defaults to "GIT_PUSH").
+    
+    Returns:
+        dict: The persisted policy decision record for the pending approval.
+    """
     cp_router_module.cp_store.update_task_status(task_id=task_id, status="awaiting_approval")
     return cp_router_module.cp_store.record_policy_decision(
         run_id=run_id,
@@ -164,6 +173,23 @@ def _create_pending_approval(client, run_id, task_id, *, action_type="GIT_PUSH")
 
 
 def _approval_request(task_id, decision_id, *, action_type="GIT_PUSH", expires_at=None):
+    """
+    Builds a JSON-like approval request payload for tests.
+    
+    Parameters:
+        task_id (str): ID of the task the approval pertains to.
+        decision_id (str): ID of the policy decision the approval corresponds to.
+        action_type (str, optional): Action type for the approval (defaults to "GIT_PUSH").
+        expires_at (int | None, optional): Unix timestamp when the approval expires; if omitted, defaults to now + 300 seconds.
+    
+    Returns:
+        dict: A mapping with keys:
+            - "task_id": the provided task_id
+            - "decision_id": the provided decision_id
+            - "action_type": the provided or default action_type
+            - "expires_at": expiration timestamp (int)
+            - "note": a short note string ("reviewed")
+    """
     return {
         "task_id": task_id,
         "decision_id": decision_id,
@@ -174,6 +200,18 @@ def _approval_request(task_id, decision_id, *, action_type="GIT_PUSH", expires_a
 
 
 def _human_headers(**overrides):
+    """
+    Return default HTTP headers that represent a human principal, with optional overrides.
+    
+    Parameters:
+        **overrides: Mapping[str, str]
+            Header names and values to merge into and override the defaults.
+    
+    Returns:
+        dict: A mapping of header names to values containing the defaults
+        ("X-Principal-ID": "alice", "X-Principal-Type": "human", "X-Trace-ID": "trace-123")
+        with any provided overrides applied.
+    """
     return {
         "X-Principal-ID": "alice",
         "X-Principal-Type": "human",
@@ -197,6 +235,11 @@ def test_approve_run_requires_authenticated_identity(client):
 
 
 def test_approve_run_rejects_mismatched_task(client):
+    """
+    Verifies that approving a run fails when the provided approval decision does not belong to the task being approved.
+    
+    Sets up a run with two tasks, records a pending approval linked to the first task, marks the second task as awaiting approval, and posts an approval request referencing the second task but the decision ID for the first; expects an HTTP 409 with detail "approval_decision_mismatch".
+    """
     run_id = _create_run(client).json()["run_id"]
     task_id = _create_task(client, run_id).json()["task_id"]
     other_task_id = _create_task(client, run_id, task_type="review").json()["task_id"]
@@ -233,6 +276,11 @@ def test_approve_run_rejects_duplicate_approval(client):
 
 
 def test_approve_run_rejects_expired_approval(client):
+    """
+    Verify that submitting an approval for a pending decision that has an expired `expires_at` is rejected.
+    
+    Posts an approval request with `expires_at` set to a past timestamp and asserts the API responds with HTTP 409 and a JSON `detail` of `"approval_expired"`.
+    """
     run_id = _create_run(client).json()["run_id"]
     task_id = _create_task(client, run_id).json()["task_id"]
     decision_id = _create_pending_approval(client, run_id, task_id)
