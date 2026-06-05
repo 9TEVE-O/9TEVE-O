@@ -532,3 +532,96 @@ def test_store_create_artifact_idempotent(tmp_path):
     a2 = store.create_artifact(run_id=run_id, artifact_type="audit_pack", content=content)
     assert a1 == a2  # same content → same id (INSERT OR IGNORE)
 
+
+# ─────────────────────────────────────────────────────────
+# Code task archival
+# ─────────────────────────────────────────────────────────
+
+def test_archive_code_tasks_archives_complete_and_explicitly_stale_tasks(client):
+    complete_run_id = _create_run(client, goal="Complete code").json()["run_id"]
+    complete_task_id = _create_task(client, complete_run_id).json()["task_id"]
+    client.post(f"/v1/tasks/{complete_task_id}/dispatch")
+    client.post(f"/v1/tasks/{complete_task_id}/complete", json={"status": "completed"})
+
+    stale_run_id = _create_run(client, goal="Stale code").json()["run_id"]
+    stale_task_id = _create_task(client, stale_run_id, task_type="code").json()["task_id"]
+    review_task_id = _create_task(client, stale_run_id, task_type="review").json()["task_id"]
+
+    complete_response = client.post(f"/v1/runs/{complete_run_id}/tasks/archive-code", json={})
+    stale_response = client.post(
+        f"/v1/runs/{stale_run_id}/tasks/archive-code", json={"stale_before": 2**31}
+    )
+
+    assert complete_response.status_code == 200
+    assert complete_response.json() == {
+        "archived_task_ids": [complete_task_id],
+        "archived_count": 1,
+    }
+    assert stale_response.status_code == 200
+    assert stale_response.json() == {"archived_task_ids": [stale_task_id], "archived_count": 1}
+
+    visible_tasks = client.get(f"/v1/runs/{stale_run_id}/tasks").json()
+    assert [task["task_id"] for task in visible_tasks] == [review_task_id]
+
+    complete_tasks = client.get(f"/v1/runs/{complete_run_id}/tasks?include_archived=true").json()
+    stale_tasks = client.get(f"/v1/runs/{stale_run_id}/tasks?include_archived=true").json()
+    archived_tasks = {task["task_id"]: task["archived_at"] for task in complete_tasks + stale_tasks}
+    assert archived_tasks[complete_task_id] is not None
+    assert archived_tasks[stale_task_id] is not None
+    assert archived_tasks[review_task_id] is None
+
+
+def test_archive_code_tasks_without_cutoff_preserves_unfinished_tasks(client):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+
+    response = client.post(f"/v1/runs/{run_id}/tasks/archive-code", json={})
+
+    assert response.status_code == 200
+    assert response.json() == {"archived_task_ids": [], "archived_count": 0}
+    assert client.get(f"/v1/runs/{run_id}/tasks").json()[0]["task_id"] == task_id
+
+
+def test_archive_code_tasks_run_not_found(client):
+    response = client.post("/v1/runs/run_doesnotexist/tasks/archive-code", json={})
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "run_not_found"
+
+
+def test_dispatch_archived_stale_code_task_returns_409(client):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+    client.post(f"/v1/runs/{run_id}/tasks/archive-code", json={"stale_before": 2**31})
+
+    response = client.post(f"/v1/tasks/{task_id}/dispatch")
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Task is archived"
+
+
+def test_store_adds_archived_at_column_to_existing_database(tmp_path):
+    import sqlite3
+
+    db_path = tmp_path / "db.sqlite3"
+    with sqlite3.connect(db_path) as con:
+        con.execute(
+            """
+            CREATE TABLE cp_tasks (
+              id TEXT PRIMARY KEY,
+              run_id TEXT NOT NULL,
+              created_at INTEGER NOT NULL,
+              status TEXT NOT NULL DEFAULT 'pending',
+              type TEXT NOT NULL,
+              agent_role TEXT,
+              inputs_json TEXT NOT NULL DEFAULT '{}',
+              outputs_json TEXT
+            )
+            """
+        )
+
+    ControlPlaneStore(str(db_path))
+
+    with sqlite3.connect(db_path) as con:
+        columns = {row[1] for row in con.execute("PRAGMA table_info(cp_tasks)")}
+    assert "archived_at" in columns

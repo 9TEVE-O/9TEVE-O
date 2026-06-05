@@ -146,6 +146,17 @@ class CompleteTaskRequest(BaseModel):
     )
 
 
+class ArchiveCodeTasksRequest(BaseModel):
+    stale_before: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Optional Unix timestamp. Unfinished code tasks created before this cutoff "
+            "are stale and eligible for archival."
+        ),
+    )
+
+
 class TaskResponse(BaseModel):
     task_id: str
     run_id: str
@@ -153,6 +164,7 @@ class TaskResponse(BaseModel):
     type: str
     agent_role: str | None
     created_at: int
+    archived_at: int | None
 
 
 # ─────────────────────────────────────────────────────────

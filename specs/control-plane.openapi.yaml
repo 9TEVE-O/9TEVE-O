@@ -155,6 +155,12 @@ paths:
       tags: [tasks]
       parameters:
         - $ref: "#/components/parameters/RunId"
+        - name: include_archived
+          in: query
+          description: Include archived tasks in the response
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           description: Task list
@@ -166,6 +172,38 @@ paths:
                   $ref: "#/components/schemas/TaskResponse"
         "404":
           $ref: "#/components/responses/NotFound"
+
+  /runs/{run_id}/tasks/archive-code:
+    post:
+      operationId: archiveCodeTasks
+      summary: Archive completed, failed, or explicitly stale code tasks
+      description: |
+        Archives completed and failed code tasks immediately. When `stale_before` is
+        supplied, also archives unfinished code tasks created before that Unix timestamp.
+        Other task types are never archived by this operation.
+      tags: [tasks]
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArchiveCodeTasksRequest"
+      responses:
+        "200":
+          description: Archive summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  archived_task_ids:
+                    type: array
+                    items:
+                      type: string
+                  archived_count:
+                    type: integer
 
   /tasks/{task_id}/dispatch:
     post:
@@ -518,6 +556,15 @@ components:
         status:
           $ref: "#/components/schemas/TaskStatus"
 
+    ArchiveCodeTasksRequest:
+      type: object
+      properties:
+        stale_before:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Unix timestamp cutoff for unfinished code tasks considered stale
+
     TaskResponse:
       type: object
       properties:
@@ -534,6 +581,9 @@ components:
           nullable: true
         created_at:
           type: integer
+        archived_at:
+          type: integer
+          nullable: true
 
     ArtifactResponse:
       type: object

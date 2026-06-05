@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS cp_tasks (
   agent_role  TEXT,
   inputs_json TEXT NOT NULL DEFAULT '{}',
   outputs_json TEXT,
+  archived_at INTEGER,
   FOREIGN KEY(run_id) REFERENCES cp_runs(id)
 );
 
@@ -89,6 +90,11 @@ class ControlPlaneStore:
     def _init_db(self) -> None:
         with self._connect() as con:
             con.executescript(CP_SCHEMA)
+            task_columns = {
+                row["name"] for row in con.execute("PRAGMA table_info(cp_tasks)").fetchall()
+            }
+            if "archived_at" not in task_columns:
+                con.execute("ALTER TABLE cp_tasks ADD COLUMN archived_at INTEGER")
             con.commit()
 
     # ─────────────────────────── Runs ────────────────────────────
@@ -195,17 +201,46 @@ class ControlPlaneStore:
             con.commit()
         return cur.rowcount > 0
 
-    def list_tasks(self, *, run_id: str) -> list[sqlite3.Row]:
+    def list_tasks(self, *, run_id: str, include_archived: bool = False) -> list[sqlite3.Row]:
         with self._connect() as con:
+            archived_filter = "" if include_archived else " AND archived_at IS NULL"
             return con.execute(
-                "SELECT * FROM cp_tasks WHERE run_id = ? ORDER BY created_at ASC",
+                f"SELECT * FROM cp_tasks WHERE run_id = ?{archived_filter} ORDER BY created_at ASC",
                 (run_id,),
             ).fetchall()
+
+    def archive_code_tasks(self, *, run_id: str, stale_before: int | None = None) -> list[str]:
+        """Archive a run's terminal code tasks and optionally unfinished stale code tasks."""
+        ts = _now_ts()
+        eligibility = "status IN ('completed', 'failed')"
+        params: list[Any] = []
+        if stale_before is not None:
+            eligibility += " OR created_at < ?"
+            params.append(stale_before)
+
+        with self._connect() as con:
+            rows = con.execute(
+                f"""
+                SELECT id FROM cp_tasks
+                WHERE run_id = ? AND type = 'code' AND archived_at IS NULL AND ({eligibility})
+                ORDER BY created_at ASC
+                """,
+                [run_id, *params],
+            ).fetchall()
+            task_ids = [row["id"] for row in rows]
+            if task_ids:
+                placeholders = ", ".join("?" for _ in task_ids)
+                con.execute(
+                    f"UPDATE cp_tasks SET archived_at = ? WHERE id IN ({placeholders})",
+                    [ts, *task_ids],
+                )
+                con.commit()
+        return task_ids
 
     def list_awaiting_approval_tasks(self, *, run_id: str) -> list[sqlite3.Row]:
         with self._connect() as con:
             return con.execute(
-                "SELECT * FROM cp_tasks WHERE run_id = ? AND status = 'awaiting_approval'",
+                "SELECT * FROM cp_tasks WHERE run_id = ? AND status = 'awaiting_approval' AND archived_at IS NULL",
                 (run_id,),
             ).fetchall()
 

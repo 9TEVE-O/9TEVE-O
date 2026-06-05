@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException
 
 from able_to_answer.control_plane.models import (
     ApproveRequest,
+    ArchiveCodeTasksRequest,
     ArtifactDetailResponse,
     ArtifactResponse,
     CompleteTaskRequest,
@@ -131,15 +132,16 @@ def create_task(run_id: str, req: CreateTaskRequest) -> TaskResponse:
         type=task["type"],
         agent_role=task["agent_role"],
         created_at=task["created_at"],
+        archived_at=task["archived_at"],
     )
 
 
 @router.get("/runs/{run_id}/tasks", response_model=list[TaskResponse])
-def list_tasks(run_id: str) -> list[TaskResponse]:
+def list_tasks(run_id: str, include_archived: bool = False) -> list[TaskResponse]:
     row = cp_store.get_run(run_id=run_id)
     if not row:
         raise HTTPException(status_code=404, detail="run_not_found")
-    tasks = cp_store.list_tasks(run_id=run_id)
+    tasks = cp_store.list_tasks(run_id=run_id, include_archived=include_archived)
     return [
         TaskResponse(
             task_id=t["id"],
@@ -148,9 +150,25 @@ def list_tasks(run_id: str) -> list[TaskResponse]:
             type=t["type"],
             agent_role=t["agent_role"],
             created_at=t["created_at"],
+            archived_at=t["archived_at"],
         )
         for t in tasks
     ]
+
+
+@router.post("/runs/{run_id}/tasks/archive-code", status_code=200)
+def archive_code_tasks(run_id: str, req: ArchiveCodeTasksRequest) -> dict:
+    """Archive terminal code tasks and unfinished code tasks older than an explicit cutoff."""
+    if not cp_store.get_run(run_id=run_id):
+        raise HTTPException(status_code=404, detail="run_not_found")
+    task_ids = cp_store.archive_code_tasks(run_id=run_id, stale_before=req.stale_before)
+    logger.info(
+        "control_plane: code_tasks_archived run=%s count=%d stale_before=%s",
+        run_id,
+        len(task_ids),
+        req.stale_before,
+    )
+    return {"archived_task_ids": task_ids, "archived_count": len(task_ids)}
 
 
 @router.post("/tasks/{task_id}/dispatch", status_code=200)
@@ -159,6 +177,8 @@ def dispatch_task(task_id: str) -> dict:
     task = cp_store.get_task(task_id=task_id)
     if not task:
         raise HTTPException(status_code=404, detail="task_not_found")
+    if task["archived_at"] is not None:
+        raise HTTPException(status_code=409, detail="Task is archived")
     if task["status"] != "pending":
         raise HTTPException(
             status_code=409,
@@ -184,6 +204,8 @@ def complete_task(task_id: str, req: CompleteTaskRequest) -> dict:
     task = cp_store.get_task(task_id=task_id)
     if not task:
         raise HTTPException(status_code=404, detail="task_not_found")
+    if task["archived_at"] is not None:
+        raise HTTPException(status_code=409, detail="Task is archived")
     if task["status"] not in {"dispatched", "awaiting_approval"}:
         raise HTTPException(
             status_code=409,
