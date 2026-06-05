@@ -190,5 +190,8 @@ class PolicyEvaluateResponse(BaseModel):
 # ─────────────────────────────────────────────────────────
 
 class ApproveRequest(BaseModel):
-    approved_by: str | None = Field(default=None, description="Identity of the approver")
+    task_id: str = Field(..., description="Single gated task to approve")
+    decision_id: str = Field(..., description="Pending policy decision authorizing the task")
+    action_type: str = Field(..., description="Gated action authorized by the approval")
+    expires_at: int = Field(..., description="Unix timestamp after which approval is invalid")
     note: str | None = Field(default=None, description="Optional approval note")

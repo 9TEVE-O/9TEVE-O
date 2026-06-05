@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import json
+import sqlite3
+import time
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Header, HTTPException
 
 from able_to_answer.control_plane.models import (
     ApproveRequest,
@@ -20,7 +22,10 @@ from able_to_answer.control_plane.models import (
     TaskStatus,
 )
 from able_to_answer.control_plane.policy import evaluate_action, get_policy_profile
-from able_to_answer.control_plane.storage import ControlPlaneStore
+from able_to_answer.control_plane.storage import (
+    ApprovalDispatchConflictError,
+    ControlPlaneStore,
+)
 from able_to_answer.core.config import settings
 from able_to_answer.core.logging import logger
 
@@ -84,27 +89,78 @@ def cancel_run(run_id: str) -> dict:
 
 
 @router.post("/runs/{run_id}/approve", status_code=200)
-def approve_run(run_id: str, req: ApproveRequest) -> dict:
-    """Approve all tasks currently in *awaiting_approval* state for this run.
+def approve_run(
+    run_id: str,
+    req: ApproveRequest,
+    principal_id: str | None = Header(default=None, alias="X-Principal-ID"),
+    principal_type: str | None = Header(default=None, alias="X-Principal-Type"),
+    trace_id: str | None = Header(default=None, alias="X-Trace-ID"),
+) -> dict:
+    """Persist a human approval for one pending policy decision, then dispatch its task."""
+    if not principal_id or not principal_type:
+        raise HTTPException(status_code=401, detail="authenticated_principal_required")
+    if principal_type != "human":
+        raise HTTPException(status_code=403, detail="human_approver_required")
+    if not trace_id:
+        raise HTTPException(status_code=400, detail="trace_id_required")
 
-    ``req.approved_by`` should identify the human approver for the audit log.
-    """
     row = cp_store.get_run(run_id=run_id)
     if not row:
         raise HTTPException(status_code=404, detail="run_not_found")
 
-    tasks = cp_store.list_awaiting_approval_tasks(run_id=run_id)
-    for task in tasks:
-        cp_store.update_task_status(task_id=task["id"], status="dispatched")
+    task = cp_store.get_task(task_id=req.task_id)
+    if not task or task["run_id"] != run_id:
+        raise HTTPException(status_code=409, detail="approval_task_mismatch")
+    if cp_store.get_approval_for_decision(decision_id=req.decision_id):
+        raise HTTPException(status_code=409, detail="approval_already_recorded")
+    if task["status"] != "awaiting_approval":
+        raise HTTPException(status_code=409, detail="task_not_awaiting_approval")
 
-    approved_by = req.approved_by
+    decision = cp_store.get_policy_decision(decision_id=req.decision_id)
+    if (
+        not decision
+        or decision["run_id"] != run_id
+        or decision["task_id"] != req.task_id
+    ):
+        raise HTTPException(status_code=409, detail="approval_decision_mismatch")
+    if decision["decision"] != "pending_approval":
+        raise HTTPException(status_code=409, detail="decision_not_awaiting_approval")
+    if decision["action_type"] != req.action_type:
+        raise HTTPException(status_code=409, detail="approval_action_mismatch")
+    if req.expires_at <= int(time.time()):
+        raise HTTPException(status_code=409, detail="approval_expired")
+
+    try:
+        approval = cp_store.create_approval_and_dispatch(
+            run_id=run_id,
+            task_id=req.task_id,
+            action_type=req.action_type,
+            decision_id=req.decision_id,
+            approver_id=principal_id,
+            expires_at=req.expires_at,
+            note=req.note,
+            trace_id=trace_id,
+        )
+    except sqlite3.IntegrityError as exc:
+        raise HTTPException(status_code=409, detail="approval_already_recorded") from exc
+    except ApprovalDispatchConflictError as exc:
+        raise HTTPException(status_code=409, detail="task_not_awaiting_approval") from exc
+
     logger.info(
-        "control_plane: run_approved run=%s approved_tasks=%d approved_by=%s",
+        "control_plane: approval_recorded approval=%s decision=%s task=%s run=%s approver=%s trace=%s",
+        approval.approval_id,
+        req.decision_id,
+        req.task_id,
         run_id,
-        len(tasks),
-        approved_by,
+        principal_id,
+        trace_id,
     )
-    return {"run_id": run_id, "approved_tasks": len(tasks)}
+    return {
+        "approval_id": approval.approval_id,
+        "decision_id": req.decision_id,
+        "task_id": req.task_id,
+        "status": "dispatched",
+    }
 
 
 # ─────────────────────────────────────────────────────────

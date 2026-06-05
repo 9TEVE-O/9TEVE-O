@@ -5,6 +5,7 @@ import hashlib
 import json
 import sqlite3
 import time
+from dataclasses import dataclass
 from typing import Any
 
 CP_SCHEMA = """
@@ -62,6 +63,25 @@ CREATE TABLE IF NOT EXISTS cp_policy_decisions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_cp_poldec_run ON cp_policy_decisions(run_id);
+
+CREATE TABLE IF NOT EXISTS cp_approvals (
+  id          TEXT PRIMARY KEY,
+  run_id      TEXT NOT NULL,
+  task_id     TEXT NOT NULL,
+  action_type TEXT NOT NULL,
+  decision_id TEXT NOT NULL UNIQUE,
+  approver_id TEXT NOT NULL,
+  created_at  INTEGER NOT NULL,
+  expires_at  INTEGER NOT NULL,
+  note        TEXT,
+  trace_id    TEXT NOT NULL,
+  FOREIGN KEY(run_id) REFERENCES cp_runs(id),
+  FOREIGN KEY(task_id) REFERENCES cp_tasks(id),
+  FOREIGN KEY(decision_id) REFERENCES cp_policy_decisions(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_cp_approvals_run ON cp_approvals(run_id);
+CREATE INDEX IF NOT EXISTS idx_cp_approvals_task ON cp_approvals(task_id);
 """
 
 
@@ -72,6 +92,26 @@ def _now_ts() -> int:
 def _make_id(prefix: str, payload: str) -> str:
     h = hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
     return f"{prefix}_{h}"
+
+
+class ApprovalDispatchConflictError(RuntimeError):
+    """Raised when an approval cannot dispatch a task from its gated state."""
+
+
+@dataclass(frozen=True)
+class ApprovalRecord:
+    """Immutable authorization record for one gated action."""
+
+    approval_id: str
+    run_id: str
+    task_id: str
+    action_type: str
+    decision_id: str
+    approver_id: str
+    timestamp: int
+    expiry: int
+    note: str | None
+    trace_id: str
 
 
 class ControlPlaneStore:
@@ -274,3 +314,105 @@ class ControlPlaneStore:
             )
             con.commit()
         return pd_id
+
+    def get_policy_decision(self, *, decision_id: str) -> sqlite3.Row | None:
+        with self._connect() as con:
+            return con.execute(
+                "SELECT * FROM cp_policy_decisions WHERE id = ?", (decision_id,)
+            ).fetchone()
+
+    # ────────────────────────── Approvals ─────────────────────────
+
+    def create_approval_and_dispatch(
+        self,
+        *,
+        run_id: str,
+        task_id: str,
+        action_type: str,
+        decision_id: str,
+        approver_id: str,
+        expires_at: int,
+        note: str | None,
+        trace_id: str,
+    ) -> ApprovalRecord:
+        """Persist an immutable approval, then dispatch its gated task atomically.
+
+        A policy decision may be approved only once. The database constraint keeps
+        duplicate submissions from dispatching the gated action more than once.
+        """
+        ts = _now_ts()
+        approval_id = _make_id(
+            "approval", f"{decision_id}:{task_id}:{approver_id}:{trace_id}:{ts}"
+        )
+        with self._connect() as con:
+            con.execute(
+                """
+                INSERT INTO cp_approvals
+                (id, run_id, task_id, action_type, decision_id, approver_id,
+                 created_at, expires_at, note, trace_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    approval_id,
+                    run_id,
+                    task_id,
+                    action_type,
+                    decision_id,
+                    approver_id,
+                    ts,
+                    expires_at,
+                    note,
+                    trace_id,
+                ),
+            )
+            dispatched = con.execute(
+                """
+                UPDATE cp_tasks SET status = 'dispatched'
+                WHERE id = ? AND status = 'awaiting_approval'
+                """,
+                (task_id,),
+            )
+            if dispatched.rowcount != 1:
+                raise ApprovalDispatchConflictError(task_id)
+            con.commit()
+        return ApprovalRecord(
+            approval_id=approval_id,
+            run_id=run_id,
+            task_id=task_id,
+            action_type=action_type,
+            decision_id=decision_id,
+            approver_id=approver_id,
+            timestamp=ts,
+            expiry=expires_at,
+            note=note,
+            trace_id=trace_id,
+        )
+
+    def get_approval(self, *, approval_id: str) -> ApprovalRecord | None:
+        with self._connect() as con:
+            row = con.execute(
+                "SELECT * FROM cp_approvals WHERE id = ?", (approval_id,)
+            ).fetchone()
+        return self._approval_record(row) if row else None
+
+    def get_approval_for_decision(self, *, decision_id: str) -> ApprovalRecord | None:
+        with self._connect() as con:
+            row = con.execute(
+                "SELECT * FROM cp_approvals WHERE decision_id = ?", (decision_id,)
+            ).fetchone()
+        return self._approval_record(row) if row else None
+
+    @staticmethod
+    def _approval_record(row: sqlite3.Row) -> ApprovalRecord:
+        return ApprovalRecord(
+            approval_id=row["id"],
+            run_id=row["run_id"],
+            task_id=row["task_id"],
+            action_type=row["action_type"],
+            decision_id=row["decision_id"],
+            approver_id=row["approver_id"],
+            timestamp=row["created_at"],
+            expiry=row["expires_at"],
+            note=row["note"],
+            trace_id=row["trace_id"],
+        )

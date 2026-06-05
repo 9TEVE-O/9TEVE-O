@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import logging
+import time
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -149,30 +152,140 @@ def test_dispatch_task_unconditional(client):
     assert data["status"] == "dispatched"
 
 
-def test_approve_run_no_awaiting_tasks(client):
-    """Approving a run with no awaiting tasks returns approved_tasks=0."""
-    run_id = _create_run(client).json()["run_id"]
+def _create_pending_approval(client, run_id, task_id, *, action_type="GIT_PUSH"):
+    cp_router_module.cp_store.update_task_status(task_id=task_id, status="awaiting_approval")
+    return cp_router_module.cp_store.record_policy_decision(
+        run_id=run_id,
+        task_id=task_id,
+        action_type=action_type,
+        decision="pending_approval",
+        reason="requires human approval",
+    )
 
-    resp = client.post(f"/v1/runs/{run_id}/approve", json={"approved_by": "alice"})
-    assert resp.status_code == 200
-    assert resp.json()["approved_tasks"] == 0
+
+def _approval_request(task_id, decision_id, *, action_type="GIT_PUSH", expires_at=None):
+    return {
+        "task_id": task_id,
+        "decision_id": decision_id,
+        "action_type": action_type,
+        "expires_at": expires_at or int(time.time()) + 300,
+        "note": "reviewed",
+    }
 
 
-def test_approve_run_promotes_awaiting_tasks(client):
-    """Approving a run transitions tasks in awaiting_approval to dispatched."""
+def _human_headers(**overrides):
+    return {
+        "X-Principal-ID": "alice",
+        "X-Principal-Type": "human",
+        "X-Trace-ID": "trace-123",
+        **overrides,
+    }
+
+
+def test_approve_run_requires_authenticated_identity(client):
     run_id = _create_run(client).json()["run_id"]
     task_id = _create_task(client, run_id).json()["task_id"]
+    decision_id = _create_pending_approval(client, run_id, task_id)
 
-    # Manually put the task into awaiting_approval state
-    cp_router_module.cp_store.update_task_status(task_id=task_id, status="awaiting_approval")
+    resp = client.post(
+        f"/v1/runs/{run_id}/approve",
+        json=_approval_request(task_id, decision_id),
+    )
 
-    resp = client.post(f"/v1/runs/{run_id}/approve", json={"approved_by": "alice"})
+    assert resp.status_code == 401
+    assert resp.json()["detail"] == "authenticated_principal_required"
+
+
+def test_approve_run_rejects_mismatched_task(client):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+    other_task_id = _create_task(client, run_id, task_type="review").json()["task_id"]
+    decision_id = _create_pending_approval(client, run_id, task_id)
+    cp_router_module.cp_store.update_task_status(
+        task_id=other_task_id, status="awaiting_approval"
+    )
+
+    resp = client.post(
+        f"/v1/runs/{run_id}/approve",
+        json=_approval_request(other_task_id, decision_id),
+        headers=_human_headers(),
+    )
+
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "approval_decision_mismatch"
+
+
+def test_approve_run_rejects_duplicate_approval(client):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+    decision_id = _create_pending_approval(client, run_id, task_id)
+    payload = _approval_request(task_id, decision_id)
+
+    assert client.post(
+        f"/v1/runs/{run_id}/approve", json=payload, headers=_human_headers()
+    ).status_code == 200
+    resp = client.post(
+        f"/v1/runs/{run_id}/approve", json=payload, headers=_human_headers()
+    )
+
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "approval_already_recorded"
+
+
+def test_approve_run_rejects_expired_approval(client):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+    decision_id = _create_pending_approval(client, run_id, task_id)
+
+    resp = client.post(
+        f"/v1/runs/{run_id}/approve",
+        json=_approval_request(task_id, decision_id, expires_at=int(time.time()) - 1),
+        headers=_human_headers(),
+    )
+
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "approval_expired"
+
+
+def test_approve_run_rejects_agent_principal(client):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+    decision_id = _create_pending_approval(client, run_id, task_id)
+
+    resp = client.post(
+        f"/v1/runs/{run_id}/approve",
+        json=_approval_request(task_id, decision_id),
+        headers=_human_headers(**{"X-Principal-Type": "agent"}),
+    )
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "human_approver_required"
+
+
+def test_approve_run_persists_human_approval_and_emits_audit_event(client, caplog):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+    decision_id = _create_pending_approval(client, run_id, task_id)
+
+    with caplog.at_level(logging.INFO):
+        resp = client.post(
+            f"/v1/runs/{run_id}/approve",
+            json=_approval_request(task_id, decision_id),
+            headers=_human_headers(),
+        )
+
     assert resp.status_code == 200
-    assert resp.json()["approved_tasks"] == 1
-
-    # Verify the task is now dispatched
-    tasks = client.get(f"/v1/runs/{run_id}/tasks").json()
-    assert tasks[0]["status"] == "dispatched"
+    data = resp.json()
+    assert data["decision_id"] == decision_id
+    assert data["task_id"] == task_id
+    assert data["status"] == "dispatched"
+    approval = cp_router_module.cp_store.get_approval(approval_id=data["approval_id"])
+    assert approval.approver_id == "alice"
+    assert approval.decision_id == decision_id
+    assert approval.trace_id == "trace-123"
+    assert cp_router_module.cp_store.get_task(task_id=task_id)["status"] == "dispatched"
+    assert data["approval_id"] in caplog.text
+    assert decision_id in caplog.text
 
 
 def test_complete_task(client):
