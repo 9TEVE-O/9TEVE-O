@@ -90,6 +90,16 @@ def _now_ts() -> int:
 
 
 def _make_id(prefix: str, payload: str) -> str:
+    """
+    Create a short deterministic identifier by hashing the given payload and prefixing it.
+    
+    Parameters:
+    	prefix (str): String placed before the underscore in the identifier.
+    	payload (str): Input string whose SHA-256 digest determines the identifier suffix.
+    
+    Returns:
+    	str: Identifier in the form "<prefix>_<first16hexOfSha256(payload)>".
+    """
     h = hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
     return f"{prefix}_{h}"
 
@@ -301,6 +311,21 @@ class ControlPlaneStore:
         decision: str,
         reason: str,
     ) -> str:
+        """
+        Record a policy decision for a run and return the generated policy-decision id.
+        
+        Records a decision in the control-plane store's policy decision table. The decision may be associated with a specific task when `task_id` is provided.
+        
+        Parameters:
+            run_id (str): Identifier of the run the decision belongs to.
+            task_id (str | None): Identifier of the task this decision pertains to, or `None` if not task-specific.
+            action_type (str): The action category the decision addresses (e.g., "dispatch", "approve").
+            decision (str): The decision text or outcome.
+            reason (str): A human-readable explanation for the decision.
+        
+        Returns:
+            str: The generated policy-decision id (prefixed with "pd_").
+        """
         ts = _now_ts()
         pd_id = _make_id("pd", f"{run_id}:{task_id}:{action_type}:{ts}")
         with self._connect() as con:
@@ -316,6 +341,12 @@ class ControlPlaneStore:
         return pd_id
 
     def get_policy_decision(self, *, decision_id: str) -> sqlite3.Row | None:
+        """
+        Retrieve the policy decision row for the given decision id.
+        
+        Returns:
+            sqlite3.Row | None: The matching policy decision row, or `None` if no decision exists with that id.
+        """
         with self._connect() as con:
             return con.execute(
                 "SELECT * FROM cp_policy_decisions WHERE id = ?", (decision_id,)
@@ -335,10 +366,26 @@ class ControlPlaneStore:
         note: str | None,
         trace_id: str,
     ) -> ApprovalRecord:
-        """Persist an immutable approval, then dispatch its gated task atomically.
-
-        A policy decision may be approved only once. The database constraint keeps
-        duplicate submissions from dispatching the gated action more than once.
+        """
+        Persist an immutable approval and atomically dispatch the associated gated task.
+        
+        In a single transaction this inserts an approval record into the approvals table and updates the task's status from "awaiting_approval" to "dispatched". The schema enforces uniqueness of a decision's approval, preventing the same decision from being approved and dispatched multiple times.
+        
+        Parameters:
+            run_id (str): Identifier of the run the approval belongs to.
+            task_id (str): Identifier of the gated task to dispatch.
+            action_type (str): Action type the approval authorizes.
+            decision_id (str): Identifier of the related policy decision.
+            approver_id (str): Identifier of the approver.
+            expires_at (int): Expiration timestamp for the approval.
+            note (str | None): Optional approver note.
+            trace_id (str): Correlation trace identifier.
+        
+        Returns:
+            ApprovalRecord: The created approval record.
+        
+        Raises:
+            ApprovalDispatchConflictError: If the task was not transitioned from "awaiting_approval" to "dispatched" (i.e., the update did not affect exactly one row).
         """
         ts = _now_ts()
         approval_id = _make_id(
@@ -389,6 +436,12 @@ class ControlPlaneStore:
         )
 
     def get_approval(self, *, approval_id: str) -> ApprovalRecord | None:
+        """
+        Fetches the approval record for the given approval id.
+        
+        Returns:
+            ApprovalRecord: The approval record matching `approval_id`, or `None` if no such approval exists.
+        """
         with self._connect() as con:
             row = con.execute(
                 "SELECT * FROM cp_approvals WHERE id = ?", (approval_id,)
@@ -396,6 +449,15 @@ class ControlPlaneStore:
         return self._approval_record(row) if row else None
 
     def get_approval_for_decision(self, *, decision_id: str) -> ApprovalRecord | None:
+        """
+        Retrieve the approval record associated with a given policy decision id.
+        
+        Parameters:
+            decision_id (str): The policy decision's id to look up.
+        
+        Returns:
+            ApprovalRecord | None: The corresponding ApprovalRecord if one exists, `None` otherwise.
+        """
         with self._connect() as con:
             row = con.execute(
                 "SELECT * FROM cp_approvals WHERE decision_id = ?", (decision_id,)
@@ -404,6 +466,15 @@ class ControlPlaneStore:
 
     @staticmethod
     def _approval_record(row: sqlite3.Row) -> ApprovalRecord:
+        """
+        Map a `cp_approvals` database row into an `ApprovalRecord`.
+        
+        Parameters:
+            row (sqlite3.Row): Row from the `cp_approvals` table containing approval columns.
+        
+        Returns:
+            ApprovalRecord: An immutable approval record populated from the row's `id`, `run_id`, `task_id`, `action_type`, `decision_id`, `approver_id`, `created_at` (as `timestamp`), `expires_at` (as `expiry`), `note`, and `trace_id`.
+        """
         return ApprovalRecord(
             approval_id=row["id"],
             run_id=row["run_id"],

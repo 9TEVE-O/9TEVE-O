@@ -96,7 +96,16 @@ def approve_run(
     principal_type: str | None = Header(default=None, alias="X-Principal-Type"),
     trace_id: str | None = Header(default=None, alias="X-Trace-ID"),
 ) -> dict:
-    """Persist a human approval for one pending policy decision, then dispatch its task."""
+    """
+    Persist a human approver's decision for a single pending policy decision and dispatch the associated task.
+    
+    Returns:
+        result (dict): A payload containing:
+            - `approval_id`: the created approval's identifier
+            - `decision_id`: the policy decision identifier from the request
+            - `task_id`: the task identifier from the request
+            - `status`: the approval dispatch status, always `"dispatched"`
+    """
     if not principal_id or not principal_type:
         raise HTTPException(status_code=401, detail="authenticated_principal_required")
     if principal_type != "human":
