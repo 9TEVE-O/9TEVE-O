@@ -229,11 +229,14 @@ class ControlPlaneStore:
             ).fetchall()
             task_ids = [row["id"] for row in rows]
             if task_ids:
-                placeholders = ", ".join("?" for _ in task_ids)
-                con.execute(
-                    f"UPDATE cp_tasks SET archived_at = ? WHERE id IN ({placeholders})",
-                    [ts, *task_ids],
-                )
+                limit = 999
+                for i in range(0, len(task_ids), limit):
+                    chunk = task_ids[i : i + limit]
+                    placeholders = ", ".join("?" for _ in chunk)
+                    con.execute(
+                        f"UPDATE cp_tasks SET archived_at = ? WHERE id IN ({placeholders})",
+                        [ts, *chunk],
+                    )
                 con.commit()
         return task_ids
 
