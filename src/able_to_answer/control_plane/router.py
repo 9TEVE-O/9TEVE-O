@@ -175,8 +175,8 @@ def dispatch_task(task_id: str, req: DispatchTaskRequest) -> dict:
     if req.envelope is not None:
         envelope = req.envelope
     else:
-        assert req.actor is not None
-        assert req.action_type is not None
+        if req.actor is None or req.action_type is None:
+            raise HTTPException(status_code=400, detail="dispatch_shorthand_incomplete")
         envelope = ActionEnvelope(
             run_id=run["id"],
             task_id=task["id"],
