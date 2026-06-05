@@ -500,13 +500,27 @@ components:
 
     DispatchTaskRequest:
       type: object
-      required: [action_type]
+      description: Provide either a complete action envelope or shorthand fields used with stored task and run context.
+      oneOf:
+        - required: [envelope]
+          not:
+            anyOf:
+              - required: [actor]
+              - required: [action_type]
+        - required: [actor, action_type]
+          not:
+            required: [envelope]
       properties:
+        envelope:
+          $ref: "#/components/schemas/ActionEnvelope"
+        actor:
+          $ref: "#/components/schemas/Actor"
         action_type:
           type: string
-          description: "Action type for policy evaluation"
+          description: "Action type used with actor and stored context to construct an envelope"
         inputs:
           type: object
+          description: "Action parameters used with action_type"
           additionalProperties: true
 
     CompleteTaskRequest:
