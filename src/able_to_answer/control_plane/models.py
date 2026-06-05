@@ -4,7 +4,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 # ─────────────────────────────────────────────────────────
@@ -131,11 +131,31 @@ class CreateTaskRequest(BaseModel):
 
 
 class DispatchTaskRequest(BaseModel):
-    action_type: str = Field(
-        ...,
-        description="Action type for policy evaluation, e.g. GIT_COMMIT, GIT_PUSH",
+    envelope: ActionEnvelope | None = Field(
+        default=None,
+        description="Complete action envelope. Mutually exclusive with shorthand fields.",
     )
-    inputs: dict[str, Any] = Field(default_factory=dict)
+    actor: Actor | None = Field(
+        default=None,
+        description="Actor used with action_type to construct an envelope.",
+    )
+    action_type: str | None = Field(
+        default=None,
+        description="Action type used with actor and stored context to construct an envelope.",
+    )
+    inputs: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Action parameters used with action_type.",
+    )
+
+    @model_validator(mode="after")
+    def validate_envelope_source(self) -> "DispatchTaskRequest":
+        if self.envelope is not None:
+            if self.actor is not None or self.action_type is not None:
+                raise ValueError("Provide either envelope or shorthand fields, not both")
+        elif self.actor is None or self.action_type is None:
+            raise ValueError("Provide envelope or both actor and action_type")
+        return self
 
 
 class CompleteTaskRequest(BaseModel):
