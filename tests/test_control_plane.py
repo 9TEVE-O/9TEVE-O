@@ -603,6 +603,173 @@ def test_artifact_created_via_store_appears_in_list(client, tmp_path):
 
 
 # ─────────────────────────────────────────────────────────
+# Final audit packs
+# ─────────────────────────────────────────────────────────
+
+def _terminal_audit_pack(client, run_id, tenant_id="tenant_1"):
+    resp = client.get(f"/v1/tenants/{tenant_id}/runs/{run_id}/audit-pack")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["type"] == "final_audit_pack"
+    return data
+
+
+def test_final_audit_pack_published_for_completed_run(client):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(
+        client, run_id, task_type="plan", agent_role="planner"
+    ).json()["task_id"]
+    _dispatch(client, task_id, action_type="READ_FILE")
+    client.post(
+        f"/v1/tasks/{task_id}/complete",
+        json={
+            "status": "completed",
+            "outputs": {
+                "final_response": "done",
+                "validation_results": {"tests": "passed"},
+                "token": "must-not-leak",
+            },
+        },
+    )
+    artifact_id = cp_router_module.cp_store.create_artifact(
+        run_id=run_id,
+        artifact_type="deployment_readiness",
+        content={"ready": True, "api_key": "must-not-leak"},
+    )
+
+    resp = client.patch(f"/v1/runs/{run_id}/status", json={"status": "completed"})
+
+    assert resp.status_code == 200
+    audit = _terminal_audit_pack(client, run_id)
+    content = audit["content"]
+    assert content["run"]["status"] == "completed"
+    assert content["requirement_intent_summary"]["goal"] == "Implement feature X"
+    assert any(
+        artifact["artifact_id"] == artifact_id
+        for artifact in content["selected_artifact_versions"]
+    )
+    assert content["validation_results"][0]["validation"] == {"tests": "passed"}
+    assert any(
+        invocation.get("outcome", {}).get("token") == "[REDACTED]"
+        for invocation in content["redacted_tool_invocations"]
+    )
+    assert any(
+        invocation.get("content", {})
+        .get("requested_action", {})
+        .get("type") == "READ_FILE"
+        for invocation in content["redacted_tool_invocations"]
+    )
+    assert content["deployment_readiness_records"][0]["content"]["api_key"] == "[REDACTED]"
+
+
+def test_final_audit_pack_published_for_failed_run(client):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+    _dispatch(client, task_id)
+    client.post(
+        f"/v1/tasks/{task_id}/complete",
+        json={
+            "status": "failed",
+            "outputs": {
+                "error": "tests failed",
+                "rollback_details": {"reset_to": "HEAD~1"},
+            },
+        },
+    )
+
+    resp = client.patch(f"/v1/runs/{run_id}/status", json={"status": "failed"})
+
+    assert resp.status_code == 200
+    content = _terminal_audit_pack(client, run_id)["content"]
+    assert content["run"]["status"] == "failed"
+    assert (
+        content["failure_and_rollback_details"]["failures"][0]["details"]["error"]
+        == "tests failed"
+    )
+    assert content["failure_and_rollback_details"]["rollbacks"][0]["details"] == {
+        "reset_to": "HEAD~1"
+    }
+
+
+def test_final_audit_pack_published_for_cancelled_run(client):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+    cp_router_module.cp_store.create_artifact(
+        run_id=run_id,
+        artifact_type="runtime_state",
+        content={"phase": "cancel_requested"},
+    )
+
+    resp = client.post(f"/v1/runs/{run_id}/cancel")
+
+    assert resp.status_code == 200
+    content = _terminal_audit_pack(client, run_id)["content"]
+    assert content["run"]["status"] == "cancelled"
+    assert content["runtime_state_records"][0]["content"] == {"phase": "cancel_requested"}
+    assert (
+        content["plan_and_state_transitions"]["state_transitions"][1]["entity_id"]
+        == task_id
+    )
+
+
+def test_final_audit_pack_is_immutable_and_tenant_scoped(client):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+    _dispatch(client, task_id)
+    client.post(f"/v1/runs/{run_id}/cancel")
+    first = _terminal_audit_pack(client, run_id)
+
+    cp_router_module.cp_store.create_artifact(
+        run_id=run_id,
+        artifact_type="evaluation",
+        content={"score": 1},
+    )
+    cp_router_module.cp_store.update_run_status(run_id=run_id, status="cancelled")
+    second = _terminal_audit_pack(client, run_id)
+    wrong_tenant = client.get(f"/v1/tenants/tenant_2/runs/{run_id}/audit-pack")
+
+    assert second["artifact_id"] == first["artifact_id"]
+    assert second["content_hash"] == first["content_hash"]
+    assert second["content"]["evaluation_records"] == []
+    assert wrong_tenant.status_code == 404
+
+
+def test_final_audit_pack_includes_approval_gated_run_records(client):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+    resp = _dispatch_envelope(client, task_id, run_id, action_type="GIT_PUSH")
+    assert resp.status_code == 200
+    decision_id = _policy_decisions()[0]["id"]
+    approval_resp = client.post(
+        f"/v1/runs/{run_id}/approve",
+        json=_approval_request(task_id, decision_id),
+        headers=_human_headers(),
+    )
+    assert approval_resp.status_code == 200
+    client.post(
+        f"/v1/tasks/{task_id}/complete",
+        json={"status": "completed", "outputs": {"pushed": True}},
+    )
+
+    resp = client.patch(f"/v1/runs/{run_id}/status", json={"status": "completed"})
+
+    assert resp.status_code == 200
+    content = _terminal_audit_pack(client, run_id)["content"]
+    assert content["policy_decisions"][0]["decision"] == "pending_approval"
+    assert content["human_approvals"][0]["approver_id"] == "alice"
+    assert content["monitoring_trace_ids"] == ["trace-123"]
+
+
+def test_audit_pack_unavailable_before_terminal_state(client):
+    run_id = _create_run(client).json()["run_id"]
+
+    resp = client.get(f"/v1/tenants/tenant_1/runs/{run_id}/audit-pack")
+
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "run_not_terminal"
+
+
+# ─────────────────────────────────────────────────────────
 # Policy
 # ─────────────────────────────────────────────────────────
 

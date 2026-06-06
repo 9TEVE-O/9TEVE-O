@@ -8,6 +8,8 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
+from able_to_answer.control_plane.audit_pack import build_control_plane_audit_pack
+
 CP_SCHEMA = """
 CREATE TABLE IF NOT EXISTS cp_runs (
   id                TEXT PRIMARY KEY,
@@ -50,6 +52,8 @@ CREATE TABLE IF NOT EXISTS cp_artifacts (
 );
 
 CREATE INDEX IF NOT EXISTS idx_cp_artifacts_run ON cp_artifacts(run_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_cp_final_audit_pack
+  ON cp_artifacts(run_id) WHERE type = 'final_audit_pack';
 
 CREATE TABLE IF NOT EXISTS cp_policy_decisions (
   id          TEXT PRIMARY KEY,
@@ -192,6 +196,8 @@ class ControlPlaneStore:
             cur = con.execute(
                 "UPDATE cp_runs SET status = ? WHERE id = ?", (status, run_id)
             )
+            if cur.rowcount > 0 and status in {"completed", "failed", "cancelled"}:
+                self._publish_final_audit_pack(con=con, run_id=run_id)
             con.commit()
         return cur.rowcount > 0
 
@@ -299,6 +305,17 @@ class ControlPlaneStore:
                 "SELECT * FROM cp_artifacts WHERE run_id = ? ORDER BY created_at ASC",
                 (run_id,),
             ).fetchall()
+
+    def get_final_audit_pack(self, *, run_id: str) -> sqlite3.Row | None:
+        with self._connect() as con:
+            return con.execute(
+                """
+                SELECT * FROM cp_artifacts
+                WHERE run_id = ? AND type = 'final_audit_pack'
+                ORDER BY created_at ASC LIMIT 1
+                """,
+                (run_id,),
+            ).fetchone()
 
     # ──────────────────────── Policy Decisions ───────────────────
 
@@ -463,6 +480,62 @@ class ControlPlaneStore:
                 "SELECT * FROM cp_approvals WHERE decision_id = ?", (decision_id,)
             ).fetchone()
         return self._approval_record(row) if row else None
+
+    def _publish_final_audit_pack(
+        self, *, con: sqlite3.Connection, run_id: str
+    ) -> str | None:
+        existing = con.execute(
+            "SELECT id FROM cp_artifacts WHERE run_id = ? AND type = 'final_audit_pack'",
+            (run_id,),
+        ).fetchone()
+        if existing:
+            return existing["id"]
+
+        run = con.execute("SELECT * FROM cp_runs WHERE id = ?", (run_id,)).fetchone()
+        if not run:
+            return None
+        tasks = con.execute(
+            "SELECT * FROM cp_tasks WHERE run_id = ? ORDER BY created_at ASC",
+            (run_id,),
+        ).fetchall()
+        artifacts = con.execute(
+            "SELECT * FROM cp_artifacts WHERE run_id = ? ORDER BY created_at ASC",
+            (run_id,),
+        ).fetchall()
+        policy_decisions = con.execute(
+            "SELECT * FROM cp_policy_decisions WHERE run_id = ? ORDER BY created_at ASC",
+            (run_id,),
+        ).fetchall()
+        approvals = con.execute(
+            "SELECT * FROM cp_approvals WHERE run_id = ? ORDER BY created_at ASC",
+            (run_id,),
+        ).fetchall()
+
+        ts = _now_ts()
+        content = build_control_plane_audit_pack(
+            run=run,
+            tasks=tasks,
+            artifacts=artifacts,
+            policy_decisions=policy_decisions,
+            approvals=approvals,
+            published_at=ts,
+        )
+        content_json = json.dumps(content, sort_keys=True, ensure_ascii=False)
+        content_hash = hashlib.sha256(content_json.encode("utf-8")).hexdigest()
+        artifact_id = _make_id("artifact", f"{run_id}:final_audit_pack:{content_hash}")
+        con.execute(
+            """
+            INSERT OR IGNORE INTO cp_artifacts
+            (id, run_id, created_at, type, content_hash, content_json)
+            VALUES (?, ?, ?, 'final_audit_pack', ?, ?)
+            """,
+            (artifact_id, run_id, ts, content_hash, content_json),
+        )
+        row = con.execute(
+            "SELECT id FROM cp_artifacts WHERE run_id = ? AND type = 'final_audit_pack'",
+            (run_id,),
+        ).fetchone()
+        return row["id"] if row else artifact_id
 
     @staticmethod
     def _approval_record(row: sqlite3.Row) -> ApprovalRecord:

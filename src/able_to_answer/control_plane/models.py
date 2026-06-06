@@ -120,6 +120,10 @@ class RunResponse(BaseModel):
     created_at: int
 
 
+class UpdateRunStatusRequest(BaseModel):
+    status: RunStatus = Field(..., description="New run status")
+
+
 # ─────────────────────────────────────────────────────────
 # Tasks
 # ─────────────────────────────────────────────────────────

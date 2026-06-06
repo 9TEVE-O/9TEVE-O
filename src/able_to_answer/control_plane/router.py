@@ -7,6 +7,7 @@ import time
 
 from fastapi import APIRouter, Header, HTTPException
 
+from able_to_answer.control_plane.audit_pack import redact_value
 from able_to_answer.control_plane.models import (
     ActionEnvelope,
     ApproveRequest,
@@ -24,6 +25,7 @@ from able_to_answer.control_plane.models import (
     RunStatus,
     TaskResponse,
     TaskStatus,
+    UpdateRunStatusRequest,
 )
 from able_to_answer.control_plane.policy import evaluate_action, get_policy_profile
 from able_to_answer.control_plane.storage import (
@@ -77,6 +79,23 @@ def get_run(run_id: str) -> RunResponse:
     )
 
 
+@router.patch("/runs/{run_id}/status", status_code=200)
+def update_run_status(run_id: str, req: UpdateRunStatusRequest) -> dict:
+    row = cp_store.get_run(run_id=run_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="run_not_found")
+    if row["status"] in _TERMINAL_STATUSES:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Run is already in terminal state: {row['status']}",
+        )
+    cp_store.update_run_status(run_id=run_id, status=req.status.value)
+    logger.info(
+        "control_plane: run_status_updated run=%s status=%s", run_id, req.status.value
+    )
+    return {"run_id": run_id, "status": req.status.value}
+
+
 @router.post("/runs/{run_id}/cancel", status_code=200)
 def cancel_run(run_id: str) -> dict:
     row = cp_store.get_run(run_id=run_id)
@@ -90,6 +109,29 @@ def cancel_run(run_id: str) -> dict:
     cp_store.update_run_status(run_id=run_id, status="cancelled")
     logger.info("control_plane: run_cancelled run=%s", run_id)
     return {"run_id": run_id, "status": "cancelled"}
+
+
+@router.get(
+    "/tenants/{tenant_id}/runs/{run_id}/audit-pack",
+    response_model=ArtifactDetailResponse,
+)
+def get_run_audit_pack(tenant_id: str, run_id: str) -> ArtifactDetailResponse:
+    row = cp_store.get_run(run_id=run_id)
+    if not row or row["tenant_id"] != tenant_id:
+        raise HTTPException(status_code=404, detail="run_not_found")
+    if row["status"] not in _TERMINAL_STATUSES:
+        raise HTTPException(status_code=409, detail="run_not_terminal")
+    artifact = cp_store.get_final_audit_pack(run_id=run_id)
+    if not artifact:
+        raise HTTPException(status_code=404, detail="audit_pack_not_found")
+    return ArtifactDetailResponse(
+        artifact_id=artifact["id"],
+        run_id=artifact["run_id"],
+        type=artifact["type"],
+        content_hash=artifact["content_hash"],
+        created_at=artifact["created_at"],
+        content=json.loads(artifact["content_json"]),
+    )
 
 
 @router.post("/runs/{run_id}/approve", status_code=200)
@@ -261,6 +303,20 @@ def dispatch_task(task_id: str, req: DispatchTaskRequest) -> dict:
     for field, stored_value in stored_values.items():
         if getattr(envelope, field) != stored_value:
             raise HTTPException(status_code=403, detail=f"dispatch_{field}_mismatch")
+
+    cp_store.create_artifact(
+        run_id=run["id"],
+        artifact_type="tool_invocation",
+        content=redact_value(
+            {
+                "task_id": task_id,
+                "actor": envelope.actor.model_dump(),
+                "requested_action": envelope.requested_action.model_dump(),
+                "data_tags": envelope.data_tags,
+                "budget": envelope.budget.model_dump(),
+            }
+        ),
+    )
 
     try:
         decision, reason = evaluate_action(envelope)
