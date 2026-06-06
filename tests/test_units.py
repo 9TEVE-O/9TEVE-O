@@ -1,4 +1,5 @@
 """Unit tests for ingestion, retrieval, and audit internal functions."""
+
 from __future__ import annotations
 
 from collections import Counter
@@ -7,13 +8,13 @@ import pytest
 
 from able_to_answer.ingestion.service import _chunk_text, ingest_text
 from able_to_answer.retrieval.service import _tokenise, _score, retrieve_top_chunks
-from able_to_answer.audit.service import build_audit_pack
+from able_to_answer.audit.service import build_audit_pack, self_modelling_pressure
 from able_to_answer.core.storage import Citation, SqliteStore
-
 
 # ────────────────────────────────────────────────────────────
 # Ingestion — _chunk_text
 # ────────────────────────────────────────────────────────────
+
 
 def test_chunk_text_single_chunk():
     text = "Short text."
@@ -74,6 +75,7 @@ def test_ingest_text_idempotent(tmp_path):
 # Retrieval — _tokenise and _score
 # ────────────────────────────────────────────────────────────
 
+
 def test_tokenise_basic():
     tokens = _tokenise("Hello World!")
     assert tokens == ["hello", "world"]
@@ -112,7 +114,9 @@ def test_score_empty_chunk():
 
 def test_retrieve_top_chunks_returns_empty_for_no_chunks(tmp_path):
     store = SqliteStore(str(tmp_path / "db.sqlite3"))
-    result = retrieve_top_chunks(store, document_id="doc_doesnotexist", question="anything")
+    result = retrieve_top_chunks(
+        store, document_id="doc_doesnotexist", question="anything"
+    )
     assert result == []
 
 
@@ -122,7 +126,9 @@ def test_retrieve_top_chunks_ranks_relevant_first(tmp_path):
     audit_text = "audit trails compliance governance framework " * 30
     fruit_text = " " * 50 + "apples oranges bananas fruit salad " * 30
     result = ingest_text(store, source_name="test", text=audit_text + fruit_text)
-    citations = retrieve_top_chunks(store, document_id=result.document_id, question="audit compliance")
+    citations = retrieve_top_chunks(
+        store, document_id=result.document_id, question="audit compliance"
+    )
     assert len(citations) >= 2
     # The first result must score strictly higher than the second — the audit
     # chunk should outrank the unrelated fruit chunk for this query.
@@ -136,6 +142,7 @@ def test_retrieve_top_chunks_ranks_relevant_first(tmp_path):
 # ────────────────────────────────────────────────────────────
 # Audit — build_audit_pack
 # ────────────────────────────────────────────────────────────
+
 
 def test_build_audit_pack_structure():
     citation = Citation(
@@ -172,3 +179,69 @@ def test_build_audit_pack_empty_citations():
         retrieval_mode="lexical_overlap_v1",
     )
     assert pack["retrieval"]["citations"] == []
+
+
+# ────────────────────────────────────────────────────────────
+# Audit — self_modelling_pressure
+# ────────────────────────────────────────────────────────────
+
+
+def test_self_modelling_pressure_low_for_empty_system():
+    result = self_modelling_pressure({})
+
+    assert result["self_modelling_pressure_score"] == 0.0
+    assert result["review_level"] == "LOW: tool-like system"
+    assert "does not prove consciousness" in result["warning"]
+
+
+def test_self_modelling_pressure_critical_for_all_features():
+    result = self_modelling_pressure(
+        {
+            "complexity": 1.0,
+            "world_model": 1.0,
+            "self_model": 1.0,
+            "persistent_memory": 1.0,
+            "autonomous_goals": 1.0,
+            "embodied_or_feedback_loop": 1.0,
+            "uncertainty_tracking": 1.0,
+            "social_prediction": 1.0,
+            "affect_like_regulation": 1.0,
+            "recursive_control": 1.0,
+        }
+    )
+
+    assert result["self_modelling_pressure_score"] == 1.1
+    assert result["review_level"] == (
+        "CRITICAL: treat as morally and operationally sensitive"
+    )
+
+
+def test_self_modelling_pressure_review_threshold_boundaries():
+    assert (
+        self_modelling_pressure({"self_model": 1.0, "world_model": 1.0})["review_level"]
+        == "LOW: tool-like system"
+    )
+
+    assert (
+        self_modelling_pressure(
+            {
+                "self_model": 1.0,
+                "world_model": 1.0,
+                "complexity": 0.25,
+            }
+        )["review_level"]
+        == "MODERATE: monitor for agency-like behaviour"
+    )
+
+    assert (
+        self_modelling_pressure(
+            {
+                "self_model": 1.0,
+                "world_model": 1.0,
+                "persistent_memory": 1.0,
+                "autonomous_goals": 1.0,
+                "uncertainty_tracking": 1.0,
+            }
+        )["review_level"]
+        == "HIGH: requires ethical and safety review"
+    )
