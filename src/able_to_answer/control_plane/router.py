@@ -33,7 +33,7 @@ from able_to_answer.control_plane.storage import (
     ControlPlaneStore,
 )
 from able_to_answer.core.config import settings
-from able_to_answer.core.logging import logger
+from able_to_answer.core.logging import get_trace_context, logger, trace_headers
 
 router = APIRouter(prefix="/v1", tags=["control-plane"])
 
@@ -59,7 +59,15 @@ def create_run(req: CreateRunRequest) -> dict:
         budget_tokens=req.budget.tokens,
         budget_time_s=req.budget.time_s,
     )
-    logger.info("control_plane: run_created run=%s tenant=%s", run_id, req.tenant_id)
+    logger.info(
+        "run_created",
+        data={
+            "run_id": run_id,
+            "project_id": req.project_id,
+            "policy_profile_id": req.policy_profile_id,
+        },
+        context={"tenant_id": req.tenant_id, "run_id": run_id},
+    )
     return {"run_id": run_id}
 
 
@@ -107,7 +115,7 @@ def cancel_run(run_id: str) -> dict:
             detail=f"Run is already in terminal state: {row['status']}",
         )
     cp_store.update_run_status(run_id=run_id, status="cancelled")
-    logger.info("control_plane: run_cancelled run=%s", run_id)
+    logger.info("run_cancelled", data={"run_id": run_id}, context={"run_id": run_id})
     return {"run_id": run_id, "status": "cancelled"}
 
 
@@ -156,8 +164,7 @@ def approve_run(
         raise HTTPException(status_code=401, detail="authenticated_principal_required")
     if principal_type != "human":
         raise HTTPException(status_code=403, detail="human_approver_required")
-    if not trace_id:
-        raise HTTPException(status_code=400, detail="trace_id_required")
+    approval_trace_id = trace_id or get_trace_context()["trace_id"]
 
     row = cp_store.get_run(run_id=run_id)
     if not row:
@@ -196,7 +203,7 @@ def approve_run(
             approver_id=principal_id,
             expires_at=req.expires_at,
             note=req.note,
-            trace_id=trace_id,
+            trace_id=approval_trace_id,
         )
     except sqlite3.IntegrityError as exc:
         raise HTTPException(status_code=409, detail="approval_already_recorded") from exc
@@ -204,19 +211,22 @@ def approve_run(
         raise HTTPException(status_code=409, detail="task_not_awaiting_approval") from exc
 
     logger.info(
-        "control_plane: approval_recorded approval=%s decision=%s task=%s run=%s approver=%s trace=%s",
-        approval.approval_id,
-        req.decision_id,
-        req.task_id,
-        run_id,
-        principal_id,
-        trace_id,
+        "run_approved",
+        data={
+            "approval_id": approval.approval_id,
+            "decision_id": req.decision_id,
+            "approver_id": principal_id,
+            "principal_type": principal_type,
+            "trace_id": approval_trace_id,
+        },
+        context={"tenant_id": row["tenant_id"], "run_id": run_id, "task_id": req.task_id},
     )
     return {
         "approval_id": approval.approval_id,
         "decision_id": req.decision_id,
         "task_id": req.task_id,
         "status": "dispatched",
+        "trace_context": trace_headers(),
     }
 
 
@@ -324,7 +334,9 @@ def dispatch_task(task_id: str, req: DispatchTaskRequest) -> dict:
         decision = PolicyDecision.deny
         reason = "Policy evaluation failed; defaulting to deny."
         logger.exception(
-            "control_plane: policy_evaluation_failed task=%s run=%s", task_id, run["id"]
+            "policy_denied",
+            data={"reason": reason, "failure_mode": "policy_evaluation_exception"},
+            context={"tenant_id": run["tenant_id"], "run_id": run["id"], "task_id": task_id},
         )
 
     cp_store.record_policy_decision(
@@ -335,7 +347,22 @@ def dispatch_task(task_id: str, req: DispatchTaskRequest) -> dict:
         reason=reason,
     )
 
+    logger.info(
+        "policy_decision",
+        data={
+            "action_type": envelope.requested_action.type,
+            "policy_decision": decision.value,
+            "reason": reason,
+        },
+        context={"tenant_id": run["tenant_id"], "run_id": run["id"], "task_id": task_id},
+    )
+
     if decision == PolicyDecision.deny:
+        logger.warning(
+            "policy_denied",
+            data={"action_type": envelope.requested_action.type, "reason": reason},
+            context={"tenant_id": run["tenant_id"], "run_id": run["id"], "task_id": task_id},
+        )
         raise HTTPException(
             status_code=403,
             detail={"policy_decision": decision.value, "reason": reason},
@@ -344,17 +371,20 @@ def dispatch_task(task_id: str, req: DispatchTaskRequest) -> dict:
     status = "dispatched" if decision == PolicyDecision.allow else "awaiting_approval"
     cp_store.update_task_status(task_id=task_id, status=status)
     logger.info(
-        "control_plane: task_dispatch_evaluated task=%s run=%s decision=%s status=%s",
-        task_id,
-        run["id"],
-        decision.value,
-        status,
+        "task_dispatched",
+        data={
+            "action_type": envelope.requested_action.type,
+            "policy_decision": decision.value,
+            "status": status,
+        },
+        context={"tenant_id": run["tenant_id"], "run_id": run["id"], "task_id": task_id},
     )
     return {
         "task_id": task_id,
         "status": status,
         "policy_decision": decision.value,
         "reason": reason,
+        "trace_context": trace_headers(),
     }
 
 
@@ -374,7 +404,11 @@ def complete_task(task_id: str, req: CompleteTaskRequest) -> dict:
         status=req.status.value,
         outputs=req.outputs,
     )
-    logger.info("control_plane: task_completed task=%s status=%s", task_id, req.status.value)
+    logger.info(
+        "task_completed",
+        data={"status": req.status.value, "output_keys": sorted(req.outputs.keys())},
+        context={"run_id": task["run_id"], "task_id": task_id},
+    )
     return {"task_id": task_id, "status": req.status.value}
 
 
