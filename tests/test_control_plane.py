@@ -484,8 +484,15 @@ def test_approve_run_persists_human_approval_and_emits_audit_event(client, caplo
     assert approval.decision_id == decision_id
     assert approval.trace_id == "trace-123"
     assert cp_router_module.cp_store.get_task(task_id=task_id)["status"] == "dispatched"
-    assert data["approval_id"] in caplog.text
-    assert decision_id in caplog.text
+    approval_logs = [
+        record
+        for record in caplog.records
+        if record.getMessage() == "run_approved"
+    ]
+    assert approval_logs
+    approval_data = approval_logs[-1].structured_data
+    assert approval_data["approval_id"] == data["approval_id"]
+    assert approval_data["decision_id"] == decision_id
 
 
 def test_complete_task(client):
