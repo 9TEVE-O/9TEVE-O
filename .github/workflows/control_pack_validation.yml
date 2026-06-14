@@ -1,0 +1,53 @@
+name: Control Pack Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      validation_target:
+        description: "Validation target or PR label to exercise"
+        required: false
+        default: "validation-test-pr"
+      lab_mode:
+        description: "Run LAB-aware non-production validation only"
+        required: false
+        type: boolean
+        default: true
+      control_pack_version:
+        description: "Control pack version under validation"
+        required: false
+        default: "v0.2"
+
+jobs:
+  validation-test-pr:
+    name: LAB-aware GitHub AI control pack validation
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    env:
+      CONTROL_PACK_VERSION: ${{ inputs.control_pack_version }}
+      VALIDATION_TARGET: ${{ inputs.validation_target }}
+      LAB_MODE: ${{ inputs.lab_mode }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Confirm LAB-only execution
+        run: |
+          if [ "$LAB_MODE" != "true" ]; then
+            echo "::error::Control pack validation is restricted to LAB mode."
+            exit 1
+          fi
+          echo "Validating $CONTROL_PACK_VERSION for target '$VALIDATION_TARGET' in LAB mode."
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install validation dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run repository validation suite
+        run: python -m pytest tests/ -v
