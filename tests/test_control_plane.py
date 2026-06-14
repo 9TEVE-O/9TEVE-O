@@ -37,6 +37,50 @@ def _create_task(client, run_id, *, task_type="code", agent_role="coder"):
     )
 
 
+def _dispatch(client, task_id, *, action_type="GIT_COMMIT"):
+    return client.post(
+        f"/v1/tasks/{task_id}/dispatch",
+        json={
+            "actor": {"agent_id": "agent_1", "role": "coder"},
+            "action_type": action_type,
+        },
+    )
+
+
+def _dispatch_envelope(
+    client,
+    task_id,
+    run_id,
+    *,
+    action_type,
+    tenant_id="tenant_1",
+    policy_profile_id="default",
+    envelope_task_id=None,
+):
+    return client.post(
+        f"/v1/tasks/{task_id}/dispatch",
+        json={
+            "envelope": {
+                "run_id": run_id,
+                "task_id": envelope_task_id or task_id,
+                "actor": {"agent_id": "agent_1", "role": "coder"},
+                "tenant_id": tenant_id,
+                "policy_profile_id": policy_profile_id,
+                "requested_action": {"type": action_type, "params": {}},
+            }
+        },
+    )
+
+
+def _task_status(task_id):
+    return cp_router_module.cp_store.get_task(task_id=task_id)["status"]
+
+
+def _policy_decisions():
+    with cp_router_module.cp_store._connect() as con:
+        return con.execute("SELECT * FROM cp_policy_decisions ORDER BY created_at").fetchall()
+
+
 # ─────────────────────────────────────────────────────────
 # Runs — happy path
 # ─────────────────────────────────────────────────────────
@@ -136,17 +180,125 @@ def test_create_and_list_tasks(client):
     assert tasks[0]["task_id"] == data["task_id"]
 
 
-def test_dispatch_task_unconditional(client):
-    """Any action is dispatched immediately — no policy gate."""
+def test_dispatch_task_allowed(client):
+    """Allowed shorthand requests are recorded and dispatched."""
     run_id = _create_run(client).json()["run_id"]
     task_id = _create_task(client, run_id).json()["task_id"]
 
-    resp = client.post(
-        f"/v1/tasks/{task_id}/dispatch",
-    )
+    resp = _dispatch(client, task_id)
+
     assert resp.status_code == 200
-    data = resp.json()
-    assert data["status"] == "dispatched"
+    assert resp.json()["status"] == "dispatched"
+    assert resp.json()["policy_decision"] == "allow"
+    assert _task_status(task_id) == "dispatched"
+    assert _policy_decisions()[0]["decision"] == "allow"
+
+
+def test_dispatch_task_denied(client):
+    """Denied envelope requests are recorded and remain pending."""
+    run_id = _create_run(client, policy_profile_id="strict").json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+
+    resp = _dispatch_envelope(
+        client, task_id, run_id, action_type="GIT_PUSH", policy_profile_id="strict"
+    )
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"]["policy_decision"] == "deny"
+    assert _task_status(task_id) == "pending"
+    assert _policy_decisions()[0]["decision"] == "deny"
+
+
+def test_dispatch_task_approval_required(client):
+    """Approval-required envelope requests are recorded and await approval."""
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+
+    resp = _dispatch_envelope(client, task_id, run_id, action_type="GIT_PUSH")
+
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "awaiting_approval"
+    assert resp.json()["policy_decision"] == "pending_approval"
+    assert _task_status(task_id) == "awaiting_approval"
+    assert _policy_decisions()[0]["decision"] == "pending_approval"
+
+
+def test_dispatch_task_mismatched_tenant(client):
+    """An envelope cannot cross the run's stored tenant boundary."""
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+
+    resp = _dispatch_envelope(
+        client, task_id, run_id, action_type="GIT_COMMIT", tenant_id="tenant_2"
+    )
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "dispatch_tenant_id_mismatch"
+    assert _task_status(task_id) == "pending"
+    assert _policy_decisions() == []
+
+
+def test_dispatch_task_mismatched_run(client):
+    """An envelope cannot claim a run other than the task's parent run."""
+    run_id = _create_run(client).json()["run_id"]
+    other_run_id = _create_run(client, goal="Other run").json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+
+    resp = _dispatch_envelope(client, task_id, other_run_id, action_type="GIT_COMMIT")
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "dispatch_run_id_mismatch"
+    assert _task_status(task_id) == "pending"
+    assert _policy_decisions() == []
+
+
+def test_dispatch_task_mismatched_task(client):
+    """An envelope cannot claim a task other than the path task."""
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+
+    resp = _dispatch_envelope(
+        client, task_id, run_id, action_type="GIT_COMMIT", envelope_task_id="task_other"
+    )
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "dispatch_task_id_mismatch"
+    assert _task_status(task_id) == "pending"
+    assert _policy_decisions() == []
+
+
+def test_dispatch_task_mismatched_policy_profile(client):
+    """An envelope cannot override the run's stored policy profile."""
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+
+    resp = _dispatch_envelope(
+        client, task_id, run_id, action_type="GIT_COMMIT", policy_profile_id="strict"
+    )
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "dispatch_policy_profile_id_mismatch"
+    assert _task_status(task_id) == "pending"
+    assert _policy_decisions() == []
+
+
+def test_dispatch_task_policy_evaluation_failure_defaults_to_deny(client, monkeypatch):
+    """Evaluation failures fail closed, are recorded, and remain pending."""
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+
+    def fail_evaluation(_envelope):
+        raise RuntimeError("policy backend unavailable")
+
+    monkeypatch.setattr(cp_router_module, "evaluate_action", fail_evaluation)
+    resp = _dispatch(client, task_id)
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"]["policy_decision"] == "deny"
+    assert _task_status(task_id) == "pending"
+    decisions = _policy_decisions()
+    assert decisions[0]["decision"] == "deny"
+    assert decisions[0]["reason"] == "Policy evaluation failed; defaulting to deny."
 
 
 def test_approve_run_no_awaiting_tasks(client):
@@ -180,7 +332,7 @@ def test_complete_task(client):
     task_id = _create_task(client, run_id).json()["task_id"]
 
     # Dispatch first
-    client.post(f"/v1/tasks/{task_id}/dispatch")
+    _dispatch(client, task_id)
 
     # Complete
     resp = client.post(
@@ -209,15 +361,21 @@ def test_list_tasks_run_not_found(client):
 
 
 def test_dispatch_task_not_found(client):
-    resp = client.post("/v1/tasks/task_doesnotexist/dispatch")
+    resp = client.post(
+        "/v1/tasks/task_doesnotexist/dispatch",
+        json={
+            "actor": {"agent_id": "agent_1", "role": "coder"},
+            "action_type": "GIT_COMMIT",
+        },
+    )
     assert resp.status_code == 404
 
 
 def test_dispatch_already_dispatched_task_returns_409(client):
     run_id = _create_run(client).json()["run_id"]
     task_id = _create_task(client, run_id).json()["task_id"]
-    client.post(f"/v1/tasks/{task_id}/dispatch")
-    resp = client.post(f"/v1/tasks/{task_id}/dispatch")
+    _dispatch(client, task_id)
+    resp = _dispatch(client, task_id)
     assert resp.status_code == 409
 
 

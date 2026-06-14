@@ -6,15 +6,19 @@ import json
 from fastapi import APIRouter, HTTPException
 
 from able_to_answer.control_plane.models import (
+    ActionEnvelope,
     ApproveRequest,
     ArtifactDetailResponse,
     ArtifactResponse,
     CompleteTaskRequest,
     CreateRunRequest,
     CreateTaskRequest,
+    DispatchTaskRequest,
+    PolicyDecision,
     PolicyEvaluateRequest,
     PolicyEvaluateResponse,
     RunResponse,
+    RequestedAction,
     RunStatus,
     TaskResponse,
     TaskStatus,
@@ -154,27 +158,83 @@ def list_tasks(run_id: str) -> list[TaskResponse]:
 
 
 @router.post("/tasks/{task_id}/dispatch", status_code=200)
-def dispatch_task(task_id: str) -> dict:
-    """Dispatch a pending task directly."""
+def dispatch_task(task_id: str, req: DispatchTaskRequest) -> dict:
+    """Evaluate policy before dispatching a pending task."""
     task = cp_store.get_task(task_id=task_id)
     if not task:
         raise HTTPException(status_code=404, detail="task_not_found")
+    run = cp_store.get_run(run_id=task["run_id"])
+    if not run:
+        raise HTTPException(status_code=404, detail="run_not_found")
     if task["status"] != "pending":
         raise HTTPException(
             status_code=409,
             detail=f"Task is not in pending state: {task['status']}",
         )
 
-    cp_store.update_task_status(task_id=task_id, status="dispatched")
+    if req.envelope is not None:
+        envelope = req.envelope
+    else:
+        if req.actor is None or req.action_type is None:
+            raise HTTPException(
+                status_code=422,
+                detail="dispatch_request_missing_envelope_or_shorthand_fields",
+            )
+        envelope = ActionEnvelope(
+            run_id=run["id"],
+            task_id=task["id"],
+            actor=req.actor,
+            tenant_id=run["tenant_id"],
+            policy_profile_id=run["policy_profile_id"],
+            requested_action=RequestedAction(type=req.action_type, params=req.inputs),
+        )
+    stored_values = {
+        "run_id": run["id"],
+        "task_id": task["id"],
+        "tenant_id": run["tenant_id"],
+        "policy_profile_id": run["policy_profile_id"],
+    }
+    for field, stored_value in stored_values.items():
+        if getattr(envelope, field) != stored_value:
+            raise HTTPException(status_code=403, detail=f"dispatch_{field}_mismatch")
 
+    try:
+        decision, reason = evaluate_action(envelope)
+    except Exception:
+        decision = PolicyDecision.deny
+        reason = "Policy evaluation failed; defaulting to deny."
+        logger.exception(
+            "control_plane: policy_evaluation_failed task=%s run=%s", task_id, run["id"]
+        )
+
+    cp_store.record_policy_decision(
+        run_id=run["id"],
+        task_id=task_id,
+        action_type=envelope.requested_action.type,
+        decision=decision.value,
+        reason=reason,
+    )
+
+    if decision == PolicyDecision.deny:
+        raise HTTPException(
+            status_code=403,
+            detail={"policy_decision": decision.value, "reason": reason},
+        )
+
+    status = "dispatched" if decision == PolicyDecision.allow else "awaiting_approval"
+    cp_store.update_task_status(task_id=task_id, status=status)
     logger.info(
-        "control_plane: task_dispatched task=%s run=%s",
+        "control_plane: task_dispatch_evaluated task=%s run=%s decision=%s status=%s",
         task_id,
-        task["run_id"],
+        run["id"],
+        decision.value,
+        status,
     )
     return {
         "task_id": task_id,
-        "status": "dispatched",
+        "status": status,
+        "policy_decision": decision.value,
+        "reason": reason,
     }
 
 
