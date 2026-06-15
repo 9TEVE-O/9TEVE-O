@@ -1,0 +1,34 @@
+[
+  {
+    "id": "able-to-answer",
+    "name": "Able to Answer",
+    "problem": "Governance-grade AI document intelligence needs answers that can be retrieved, audited, and bounded by available context.",
+    "role": "Builder and maintainer of the repository implementation.",
+    "techStack": ["Python", "FastAPI", "Pydantic", "pytest", "SQLite"],
+    "metrics": [],
+    "links": [
+      { "label": "Repository", "url": "#" }
+    ],
+    "evidence": [
+      "The project package is named able-to-answer and described as governance-grade AI document intelligence: ingest, retrieve, answer, audit.",
+      "The repository includes FastAPI, Pydantic, pytest, and governance documentation.",
+      "The application exposes a command-line entrypoint named able-to-answer."
+    ]
+  },
+  {
+    "id": "review-automation",
+    "name": "Review Automation Workflows",
+    "problem": "Software review and governance workflows need repeatable automation rather than ad hoc manual checks.",
+    "role": "Repository contributor for review automation scripts and GitHub workflow definitions.",
+    "techStack": ["Python", "GitHub Actions", "YAML", "pytest"],
+    "metrics": [],
+    "links": [
+      { "label": "Workflow", "url": "#" }
+    ],
+    "evidence": [
+      "The repository includes GitHub workflow files for review automation, governance sync, and control-pack validation.",
+      "The scripts directory includes review bot and compliance report automation scripts.",
+      "Automated tests cover review bot, telemetry, control plane, and fork inventory behavior."
+    ]
+  }
+]
