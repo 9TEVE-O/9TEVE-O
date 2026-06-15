@@ -2,6 +2,12 @@ import { PortfolioInteractions } from "@/components/PortfolioInteractions";
 import { FIT_DISCLAIMER } from "@/lib/ai-contracts";
 import { getPortfolioData } from "@/lib/portfolio-data";
 
+/**
+ * Renders the main portfolio landing page.
+ *
+ * Displays portfolio data including profile information, project evidence cards,
+ * skills, and contact details in a structured, scannable layout.
+ */
 export default function Home() {
   const { profile, projects, skills } = getPortfolioData();
 

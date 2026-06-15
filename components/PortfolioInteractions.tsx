@@ -3,6 +3,11 @@
 import { FormEvent, useState } from "react";
 import { trackEvent } from "@/lib/analytics";
 
+/**
+ * Renders two interactive forms for querying portfolio experience and analyzing job fit.
+ *
+ * The "Ask My Portfolio" form allows users to ask questions about their project experience, with answers constrained to local portfolio data. The "Fit Analyzer" form accepts a pasted job description and provides analysis of portfolio alignment. Results appear in formatted text blocks when available, and submit buttons show loading state during request processing.
+ */
 export function PortfolioInteractions() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
