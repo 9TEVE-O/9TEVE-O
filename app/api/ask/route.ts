@@ -21,7 +21,7 @@ function fallbackAnswer(question: string) {
   );
 
   if (!matchingProject) {
-    return `${MISSING_EVIDENCE}\n\nClosest relevant project: ${getPortfolioData().projects[0]?.name ?? MISSING_EVIDENCE}.`;
+    return `${MISSING_EVIDENCE}\n\nNo relevant project was found in the current portfolio data.`;
   }
 
   return `Evidence found in project: ${matchingProject.name}.\n\nProblem: ${matchingProject.problem}\nRole: ${matchingProject.role}\nTech stack: ${matchingProject.techStack.join(", ") || MISSING_EVIDENCE}\nMetrics: ${matchingProject.metrics.join(", ") || MISSING_EVIDENCE}`;
