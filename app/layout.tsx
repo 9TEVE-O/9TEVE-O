@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   description: "A recruiter-friendly portfolio grounded in structured project evidence.",
 };
 
+/**
+ * Root layout component that wraps the entire application with HTML structure.
+ */
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">

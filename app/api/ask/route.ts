@@ -5,6 +5,12 @@ import { createChatCompletion } from "@/lib/openai";
 
 const MAX_QUESTION_LENGTH = 1200;
 
+/**
+ * Generates a fallback answer using portfolio evidence that matches a recruiter question.
+ *
+ * @param question - The recruiter question to match against portfolio evidence
+ * @returns A response containing project details if a match is found, or a fallback message with the closest available project
+ */
 function fallbackAnswer(question: string) {
   const normalizedQuestion = question.toLowerCase();
   const matchingProject = getPortfolioData().projects.find((project) =>
@@ -21,6 +27,13 @@ function fallbackAnswer(question: string) {
   return `Evidence found in project: ${matchingProject.name}.\n\nProblem: ${matchingProject.problem}\nRole: ${matchingProject.role}\nTech stack: ${matchingProject.techStack.join(", ") || MISSING_EVIDENCE}\nMetrics: ${matchingProject.metrics.join(", ") || MISSING_EVIDENCE}`;
 }
 
+/**
+ * Answers recruiter questions using portfolio evidence.
+ *
+ * Validates the incoming question and queries an AI model with the question and portfolio evidence. Returns an AI-generated answer or a fallback answer based on portfolio keyword matching.
+ *
+ * @returns A JSON response containing `{ error: string }` if validation fails (missing or oversized question) or `{ answer: string }` with the generated answer.
+ */
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as { question?: string } | null;
   const question = body?.question?.trim();
