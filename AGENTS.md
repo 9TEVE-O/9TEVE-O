@@ -13,7 +13,8 @@ only cover non-obvious caveats for this environment.
 - **Dependencies are installed into system Python** (the update script runs
   `pip install -e ".[dev]" --break-system-packages`). Console entry points (`uvicorn`,
   `pytest`, `able-to-answer`) are placed in `~/.local/bin`, which is not on `PATH`. Always
-  invoke tools as modules: `python3 -m pytest`, `python3 -m able_to_answer`.
+  invoke tools as modules (e.g., `python3 -m pytest`, `python3 -m able_to_answer`) or add the
+  directory to your path: `export PATH="$HOME/.local/bin:$PATH"`.
 - **Run tests:** `python3 -m pytest tests/ -v` (244 tests, all passing). `pyproject.toml`
   already sets `pythonpath = ["src"]`, so no manual `PYTHONPATH` is needed for pytest.
 - **Run the API (dev):** `PYTHONPATH=src python3 -m able_to_answer --host 0.0.0.0 --port 8000`
