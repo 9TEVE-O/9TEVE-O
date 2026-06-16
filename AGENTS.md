@@ -17,7 +17,7 @@ only cover non-obvious caveats for this environment.
   directory to your path: `export PATH="$HOME/.local/bin:$PATH"`.
 - **Run tests:** `python3 -m pytest tests/ -v` (244 tests, all passing). `pyproject.toml`
   already sets `pythonpath = ["src"]`, so no manual `PYTHONPATH` is needed for pytest.
-- **Run the API (dev):** `PYTHONPATH=src python3 -m able_to_answer --host 0.0.0.0 --port 8000`
+- **Run the API (dev):** `python3 -m able_to_answer --host 0.0.0.0 --port 8000`
   (add `--reload` for autoreload). Health check: `GET /health` → `{"status":"ok"}`.
 - **No lint tooling is configured** (no ruff/flake8/black/pre-commit). CI (`.github/workflows/ci.yml`)
   runs only `python3 -m pytest`.
