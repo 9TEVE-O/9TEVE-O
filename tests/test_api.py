@@ -4,8 +4,8 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from able_to_answer.core.storage import SqliteStore
 from able_to_answer.api.main import app
+from able_to_answer.core.storage import SqliteStore
 
 
 @pytest.fixture()

@@ -8,8 +8,6 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import pytest
-
 # ---------------------------------------------------------------------------
 # Import scripts from the scripts/ directory.
 # ---------------------------------------------------------------------------
@@ -19,7 +17,6 @@ if str(_SCRIPTS_DIR) not in sys.path:
 
 import fork_inventory as fi  # noqa: E402
 import fork_sync as fs  # noqa: E402
-
 
 # ===========================================================================
 # fork_inventory.py — pure scoring helpers

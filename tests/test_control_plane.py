@@ -6,9 +6,16 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
-from able_to_answer.api.main import app
-from able_to_answer.control_plane.storage import ControlPlaneStore
 import able_to_answer.control_plane.router as cp_router_module
+from able_to_answer.api.main import app
+from able_to_answer.control_plane.models import (
+    ActionEnvelope,
+    Actor,
+    PolicyDecision,
+    RequestedAction,
+)
+from able_to_answer.control_plane.policy import evaluate_action, get_policy_profile
+from able_to_answer.control_plane.storage import ControlPlaneStore
 
 
 @pytest.fixture()
@@ -307,10 +314,10 @@ def test_dispatch_task_policy_evaluation_failure_defaults_to_deny(client, monkey
 def _create_pending_approval(client, run_id, task_id, *, action_type="GIT_PUSH"):
     """
     Mark the specified task as awaiting human approval and create a corresponding pending policy decision in the test control plane store.
-    
+
     Parameters:
         action_type (str): The type of action that requires approval (defaults to "GIT_PUSH").
-    
+
     Returns:
         dict: The persisted policy decision record for the pending approval.
     """
@@ -327,13 +334,13 @@ def _create_pending_approval(client, run_id, task_id, *, action_type="GIT_PUSH")
 def _approval_request(task_id, decision_id, *, action_type="GIT_PUSH", expires_at=None):
     """
     Builds a JSON-like approval request payload for tests.
-    
+
     Parameters:
         task_id (str): ID of the task the approval pertains to.
         decision_id (str): ID of the policy decision the approval corresponds to.
         action_type (str, optional): Action type for the approval (defaults to "GIT_PUSH").
         expires_at (int | None, optional): Unix timestamp when the approval expires; if omitted, defaults to now + 300 seconds.
-    
+
     Returns:
         dict: A mapping with keys:
             - "task_id": the provided task_id
@@ -354,11 +361,11 @@ def _approval_request(task_id, decision_id, *, action_type="GIT_PUSH", expires_a
 def _human_headers(**overrides):
     """
     Return default HTTP headers that represent a human principal, with optional overrides.
-    
+
     Parameters:
         **overrides: Mapping[str, str]
             Header names and values to merge into and override the defaults.
-    
+
     Returns:
         dict: A mapping of header names to values containing the defaults
         ("X-Principal-ID": "alice", "X-Principal-Type": "human", "X-Trace-ID": "trace-123")
@@ -389,7 +396,7 @@ def test_approve_run_requires_authenticated_identity(client):
 def test_approve_run_rejects_mismatched_task(client):
     """
     Verifies that approving a run fails when the provided approval decision does not belong to the task being approved.
-    
+
     Sets up a run with two tasks, records a pending approval linked to the first task, marks the second task as awaiting approval, and posts an approval request referencing the second task but the decision ID for the first; expects an HTTP 409 with detail "approval_decision_mismatch".
     """
     run_id = _create_run(client).json()["run_id"]
@@ -430,7 +437,7 @@ def test_approve_run_rejects_duplicate_approval(client):
 def test_approve_run_rejects_expired_approval(client):
     """
     Verify that submitting an approval for a pending decision that has an expired `expires_at` is rejected.
-    
+
     Posts an approval request with `expires_at` set to a past timestamp and asserts the API responds with HTTP 409 and a JSON `detail` of `"approval_expired"`.
     """
     run_id = _create_run(client).json()["run_id"]
@@ -915,9 +922,6 @@ def test_evaluate_policy_permissive_allows_side_effect(client):
 # Unit tests for policy module
 # ─────────────────────────────────────────────────────────
 
-from able_to_answer.control_plane.policy import evaluate_action, get_policy_profile, BUILTIN_PROFILES
-from able_to_answer.control_plane.models import ActionEnvelope, Actor, RequestedAction, Budget
-
 
 def _envelope(action_type: str, profile: str = "default") -> ActionEnvelope:
     return ActionEnvelope(
@@ -943,31 +947,26 @@ def test_policy_get_profile_returns_builtin():
 
 def test_policy_evaluate_unknown_profile_denies():
     decision, reason = evaluate_action(_envelope("GIT_COMMIT", "ghost"))
-    from able_to_answer.control_plane.models import PolicyDecision
     assert decision == PolicyDecision.deny
     assert "ghost" in reason
 
 
 def test_policy_evaluate_non_side_effect_allowed():
-    from able_to_answer.control_plane.models import PolicyDecision
     decision, _ = evaluate_action(_envelope("READ_FILE", "default"))
     assert decision == PolicyDecision.allow
 
 
 def test_policy_evaluate_side_effect_pending_approval_default():
-    from able_to_answer.control_plane.models import PolicyDecision
     decision, _ = evaluate_action(_envelope("GIT_PUSH", "default"))
     assert decision == PolicyDecision.pending_approval
 
 
 def test_policy_evaluate_side_effect_denied_strict():
-    from able_to_answer.control_plane.models import PolicyDecision
     decision, _ = evaluate_action(_envelope("DEPLOY", "strict"))
     assert decision == PolicyDecision.deny
 
 
 def test_policy_evaluate_side_effect_allowed_permissive():
-    from able_to_answer.control_plane.models import PolicyDecision
     decision, _ = evaluate_action(_envelope("SECRET_ACCESS", "permissive"))
     assert decision == PolicyDecision.allow
 
@@ -975,8 +974,6 @@ def test_policy_evaluate_side_effect_allowed_permissive():
 # ─────────────────────────────────────────────────────────
 # Unit tests for ControlPlaneStore
 # ─────────────────────────────────────────────────────────
-
-from able_to_answer.control_plane.storage import ControlPlaneStore
 
 
 def test_store_create_and_get_run(tmp_path):

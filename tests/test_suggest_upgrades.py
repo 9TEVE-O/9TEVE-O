@@ -11,7 +11,6 @@ from able_to_answer.api.main import app
 from able_to_answer.suggest_upgrades.analyzer import analyse
 from able_to_answer.suggest_upgrades.models import Suggestion
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Fixtures / helpers
 # ─────────────────────────────────────────────────────────────────────────────

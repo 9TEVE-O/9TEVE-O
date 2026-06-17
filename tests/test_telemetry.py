@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import logging
 from io import StringIO
-
 from pathlib import Path
 
 from able_to_answer.core.logging import (
@@ -11,8 +10,8 @@ from able_to_answer.core.logging import (
     logger,
     parse_or_generate_traceparent,
     redact,
-    set_log_context,
     reset_log_context,
+    set_log_context,
     trace_headers,
 )
 
