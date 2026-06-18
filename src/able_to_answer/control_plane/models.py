@@ -153,6 +153,8 @@ class DispatchTaskRequest(BaseModel):
         if self.envelope is not None:
             if self.actor is not None or self.action_type is not None:
                 raise ValueError("Provide either envelope or shorthand fields, not both")
+            if self.inputs:
+                raise ValueError("Inputs cannot be provided when envelope is present")
         elif self.actor is None or self.action_type is None:
             raise ValueError("Provide envelope or both actor and action_type")
         return self
