@@ -57,13 +57,13 @@ export type PortfolioData = {
 
 export function getPortfolioData(): PortfolioData {
   return {
-    profile: profile as PortfolioProfile,
-    projects: projects as PortfolioProject[],
-    skills: skills as PortfolioSkill[],
-    experience: experience as PortfolioExperience[],
-  };
+    profile,
+    projects,
+    skills,
+    experience,
+  } satisfies PortfolioData;
 }
 
 export function getEvidenceText(): string {
-  return JSON.stringify(getPortfolioData(), null, 2);
+
 }
