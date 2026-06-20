@@ -14,12 +14,16 @@ export async function createChatCompletion(messages: ChatCompletionMessageParam[
     return null;
   }
 
-  const client = new OpenAI({ apiKey });
-  const completion = await client.chat.completions.create({
-    model: process.env.OPENAI_MODEL?.trim() || DEFAULT_MODEL,
-    messages,
-    temperature: 0.2,
-  });
+  try {
+    const client = new OpenAI({ apiKey });
+    const completion = await client.chat.completions.create({
+      model: process.env.OPENAI_MODEL?.trim() || DEFAULT_MODEL,
+      messages,
+      temperature: 0.2,
+    });
 
-  return completion.choices[0]?.message.content?.trim() || null;
+    return completion.choices[0]?.message.content?.trim() || null;
+  } catch {
+    return null;
+  }
 }
