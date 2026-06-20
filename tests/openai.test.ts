@@ -69,6 +69,27 @@ describe("createChatCompletion", () => {
     });
   });
 
+  it("prefers documented ATA settings over legacy unprefixed settings", async () => {
+    process.env.ATA_OPENAI_API_KEY = "ata-key";
+    process.env.ATA_OPENAI_BASE_URL = "https://example.test/v1";
+    process.env.ATA_OPENAI_MODEL = "ata-model";
+    process.env.OPENAI_API_KEY = "legacy-key";
+    process.env.OPENAI_BASE_URL = "https://legacy.example.test/v1";
+    process.env.OPENAI_MODEL = "legacy-model";
+
+    await expect(createChatCompletion(messages)).resolves.toBe("AI answer");
+
+    expect(openAIMocks.constructor).toHaveBeenCalledWith({
+      apiKey: "ata-key",
+      baseURL: "https://example.test/v1",
+    });
+    expect(openAIMocks.create).toHaveBeenCalledWith({
+      model: "ata-model",
+      messages,
+      temperature: 0.2,
+    });
+  });
+
   it("falls back to legacy unprefixed settings", async () => {
     process.env.OPENAI_API_KEY = "  legacy-key  ";
     process.env.OPENAI_BASE_URL = "  https://legacy.example.test/v1  ";
