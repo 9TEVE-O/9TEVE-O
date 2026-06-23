@@ -328,3 +328,94 @@ def test_settings_zero_max_answer_chars_raises():
             max_context_chunks=6,
             max_answer_chars=0,
         )
+
+
+def test_settings_negative_chunk_size_raises():
+    with pytest.raises(ValueError, match="ATA_CHUNK_SIZE_CHARS"):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=-100,
+            chunk_overlap_chars=0,
+            max_context_chunks=6,
+            max_answer_chars=1800,
+        )
+
+
+def test_settings_negative_max_context_chunks_raises():
+    with pytest.raises(ValueError, match="ATA_MAX_CONTEXT_CHUNKS"):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=1200,
+            chunk_overlap_chars=200,
+            max_context_chunks=-1,
+            max_answer_chars=1800,
+        )
+
+
+def test_settings_negative_max_answer_chars_raises():
+    with pytest.raises(ValueError, match="ATA_MAX_ANSWER_CHARS"):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=1200,
+            chunk_overlap_chars=200,
+            max_context_chunks=6,
+            max_answer_chars=-500,
+        )
+
+
+def test_settings_minimum_valid_boundary():
+    """chunk_size=1 with overlap=0 is the smallest valid configuration."""
+    s = Settings(
+        db_path="min.sqlite3",
+        chunk_size_chars=1,
+        chunk_overlap_chars=0,
+        max_context_chunks=1,
+        max_answer_chars=1,
+    )
+    assert s.chunk_size_chars == 1
+    assert s.chunk_overlap_chars == 0
+    assert s.max_context_chunks == 1
+    assert s.max_answer_chars == 1
+
+
+def test_settings_overlap_equal_size_error_mentions_infinite_loop():
+    """The error message for overlap >= size must mention the infinite loop risk."""
+    with pytest.raises(ValueError, match="infinite loop"):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=300,
+            chunk_overlap_chars=300,
+            max_context_chunks=6,
+            max_answer_chars=1800,
+        )
+
+
+def test_settings_github_token_none_is_valid():
+    """github_token is optional; None must not trigger any validation error."""
+    s = Settings(
+        db_path="x.sqlite3",
+        chunk_size_chars=1200,
+        chunk_overlap_chars=200,
+        max_context_chunks=6,
+        max_answer_chars=1800,
+        github_token=None,
+    )
+    assert s.github_token is None
+
+
+def test_settings_all_fields_stored():
+    """All non-default fields are persisted correctly after __post_init__."""
+    s = Settings(
+        db_path="custom.sqlite3",
+        chunk_size_chars=800,
+        chunk_overlap_chars=100,
+        max_context_chunks=4,
+        max_answer_chars=2400,
+        github_token="gh_token_abc",
+    )
+    assert s.db_path == "custom.sqlite3"
+    assert s.chunk_size_chars == 800
+    assert s.chunk_overlap_chars == 100
+    assert s.max_context_chunks == 4
+    assert s.max_answer_chars == 2400
+    assert s.github_token == "gh_token_abc"
