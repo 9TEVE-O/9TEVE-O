@@ -334,7 +334,7 @@ def test_settings_negative_chunk_size_raises():
     with pytest.raises(ValueError, match="ATA_CHUNK_SIZE_CHARS"):
         Settings(
             db_path="x.sqlite3",
-            chunk_size_chars=-100,
+            chunk_size_chars=-1,
             chunk_overlap_chars=0,
             max_context_chunks=6,
             max_answer_chars=1800,
@@ -359,39 +359,68 @@ def test_settings_negative_max_answer_chars_raises():
             chunk_size_chars=1200,
             chunk_overlap_chars=200,
             max_context_chunks=6,
-            max_answer_chars=-500,
+            max_answer_chars=-100,
         )
 
 
-def test_settings_minimum_valid_boundary():
-    """chunk_size=1 with overlap=0 is the smallest valid configuration."""
+def test_settings_zero_overlap_is_valid():
+    """chunk_overlap_chars == 0 must be accepted (no overlap is fine)."""
     s = Settings(
-        db_path="min.sqlite3",
+        db_path="x.sqlite3",
+        chunk_size_chars=500,
+        chunk_overlap_chars=0,
+        max_context_chunks=1,
+        max_answer_chars=100,
+    )
+    assert s.chunk_overlap_chars == 0
+
+
+def test_settings_max_valid_overlap_is_accepted():
+    """chunk_overlap_chars == chunk_size_chars - 1 is the largest valid value."""
+    s = Settings(
+        db_path="x.sqlite3",
+        chunk_size_chars=100,
+        chunk_overlap_chars=99,
+        max_context_chunks=1,
+        max_answer_chars=100,
+    )
+    assert s.chunk_overlap_chars == 99
+
+
+def test_settings_minimal_valid():
+    """Smallest legal values for each positive-integer constraint."""
+    s = Settings(
+        db_path="minimal.sqlite3",
         chunk_size_chars=1,
         chunk_overlap_chars=0,
         max_context_chunks=1,
         max_answer_chars=1,
     )
     assert s.chunk_size_chars == 1
-    assert s.chunk_overlap_chars == 0
     assert s.max_context_chunks == 1
     assert s.max_answer_chars == 1
 
 
-def test_settings_overlap_equal_size_error_mentions_infinite_loop():
-    """The error message for overlap >= size must mention the infinite loop risk."""
-    with pytest.raises(ValueError, match="infinite loop"):
-        Settings(
-            db_path="x.sqlite3",
-            chunk_size_chars=300,
-            chunk_overlap_chars=300,
-            max_context_chunks=6,
-            max_answer_chars=1800,
-        )
+def test_settings_all_fields_stored():
+    """All constructor arguments are accessible on the frozen dataclass."""
+    s = Settings(
+        db_path="mydb.sqlite3",
+        chunk_size_chars=600,
+        chunk_overlap_chars=50,
+        max_context_chunks=3,
+        max_answer_chars=900,
+        github_token="ghp_test",
+    )
+    assert s.db_path == "mydb.sqlite3"
+    assert s.chunk_size_chars == 600
+    assert s.chunk_overlap_chars == 50
+    assert s.max_context_chunks == 3
+    assert s.max_answer_chars == 900
+    assert s.github_token == "ghp_test"
 
 
-def test_settings_github_token_none_is_valid():
-    """github_token is optional; None must not trigger any validation error."""
+def test_settings_github_token_accepts_none():
+    """github_token=None is valid (no GitHub integration configured)."""
     s = Settings(
         db_path="x.sqlite3",
         chunk_size_chars=1200,
@@ -403,19 +432,25 @@ def test_settings_github_token_none_is_valid():
     assert s.github_token is None
 
 
-def test_settings_all_fields_stored():
-    """All non-default fields are persisted correctly after __post_init__."""
-    s = Settings(
-        db_path="custom.sqlite3",
-        chunk_size_chars=800,
-        chunk_overlap_chars=100,
-        max_context_chunks=4,
-        max_answer_chars=2400,
-        github_token="gh_token_abc",
-    )
-    assert s.db_path == "custom.sqlite3"
-    assert s.chunk_size_chars == 800
-    assert s.chunk_overlap_chars == 100
-    assert s.max_context_chunks == 4
-    assert s.max_answer_chars == 2400
-    assert s.github_token == "gh_token_abc"
+def test_settings_overlap_error_message_mentions_infinite_loop():
+    """The overlap >= size error message should mention the infinite loop risk."""
+    with pytest.raises(ValueError, match="infinite loop"):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=200,
+            chunk_overlap_chars=200,
+            max_context_chunks=6,
+            max_answer_chars=1800,
+        )
+
+
+def test_settings_chunk_size_error_message_contains_bad_value():
+    """Error message for chunk_size_chars <= 0 includes the offending value."""
+    with pytest.raises(ValueError, match="got 0"):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=0,
+            chunk_overlap_chars=0,
+            max_context_chunks=6,
+            max_answer_chars=1800,
+        )
