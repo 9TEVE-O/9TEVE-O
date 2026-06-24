@@ -20,8 +20,8 @@ from able_to_answer.control_plane.models import (
     PolicyDecision,
     PolicyEvaluateRequest,
     PolicyEvaluateResponse,
-    RunResponse,
     RequestedAction,
+    RunResponse,
     RunStatus,
     TaskResponse,
     TaskStatus,
@@ -152,7 +152,7 @@ def approve_run(
 ) -> dict:
     """
     Persist a human approver's decision for a single pending policy decision and dispatch the associated task.
-    
+
     Returns:
         result (dict): A payload containing:
             - `approval_id`: the created approval's identifier

@@ -6,22 +6,6 @@ from dataclasses import asdict
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 
-from able_to_answer.core.config import settings
-from able_to_answer.core.logging import (
-    get_traceparent,
-    logger,
-    parse_or_generate_traceparent,
-    reset_log_context,
-    set_log_context,
-    trace_headers,
-)
-from able_to_answer.core.storage import SqliteStore
-from able_to_answer.ingestion.service import ingest_text
-from able_to_answer.retrieval.service import retrieve_top_chunks
-from able_to_answer.audit.service import build_audit_pack
-from able_to_answer.control_plane.router import router as cp_router
-from able_to_answer.github_search.router import router as gh_router
-from able_to_answer.suggest_upgrades.router import router as su_router
 from able_to_answer.api.models import (
     AskRequest,
     AskResponse,
@@ -34,6 +18,22 @@ from able_to_answer.api.models import (
     IngestResponse,
     IngestTextRequest,
 )
+from able_to_answer.audit.service import build_audit_pack
+from able_to_answer.control_plane.router import router as cp_router
+from able_to_answer.core.config import settings
+from able_to_answer.core.logging import (
+    get_traceparent,
+    logger,
+    parse_or_generate_traceparent,
+    reset_log_context,
+    set_log_context,
+    trace_headers,
+)
+from able_to_answer.core.storage import SqliteStore
+from able_to_answer.github_search.router import router as gh_router
+from able_to_answer.ingestion.service import ingest_text
+from able_to_answer.retrieval.service import retrieve_top_chunks
+from able_to_answer.suggest_upgrades.router import router as su_router
 
 app = FastAPI(
     title="Able to Answer",
