@@ -348,6 +348,7 @@ def test_settings_negative_max_context_chunks_raises():
             chunk_size_chars=1200,
             chunk_overlap_chars=200,
             max_context_chunks=-1,
+            max_context_chunks=-5,
             max_answer_chars=1800,
         )
 
@@ -391,12 +392,17 @@ def test_settings_minimal_valid():
     """Smallest legal values for each positive-integer constraint."""
     s = Settings(
         db_path="minimal.sqlite3",
+def test_settings_minimum_valid_boundary_values():
+    """chunk_size=1, overlap=0, max_context=1, max_answer=1 are all minimum valid."""
+    s = Settings(
+        db_path="x.sqlite3",
         chunk_size_chars=1,
         chunk_overlap_chars=0,
         max_context_chunks=1,
         max_answer_chars=1,
     )
     assert s.chunk_size_chars == 1
+    assert s.chunk_overlap_chars == 0
     assert s.max_context_chunks == 1
     assert s.max_answer_chars == 1
 
@@ -447,6 +453,9 @@ def test_settings_overlap_error_message_mentions_infinite_loop():
 def test_settings_chunk_size_error_message_contains_bad_value():
     """Error message for chunk_size_chars <= 0 includes the offending value."""
     with pytest.raises(ValueError, match="got 0"):
+def test_settings_error_message_includes_bad_value():
+    """Validation errors should embed the offending value for debuggability."""
+    with pytest.raises(ValueError, match="0") as exc_info:
         Settings(
             db_path="x.sqlite3",
             chunk_size_chars=0,
@@ -454,3 +463,17 @@ def test_settings_chunk_size_error_message_contains_bad_value():
             max_context_chunks=6,
             max_answer_chars=1800,
         )
+    assert "0" in str(exc_info.value)
+
+
+def test_settings_overlap_one_less_than_size_is_valid():
+    """overlap == chunk_size - 1 is the largest valid overlap value."""
+    s = Settings(
+        db_path="x.sqlite3",
+        chunk_size_chars=100,
+        chunk_overlap_chars=99,
+        max_context_chunks=6,
+        max_answer_chars=1800,
+    )
+    assert s.chunk_overlap_chars == 99
+    assert s.chunk_size_chars == 100
