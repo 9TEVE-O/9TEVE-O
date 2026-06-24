@@ -1,65 +1,64 @@
 <div align="center">
 
-# Subzteveø 🙃
+# Steven Lees
 
-### These pretzels are making me thirsty
+**AI workflow consultant, builder, and writer**
 
-<p>
-Hi. Someone left the door open. Father of two boys, I wanted to know [WTF] what the future holds for the kids with all the AI bizzo. Ended up here. Broke some shiny stuff. Spoke to a robot (actually spoke to a dozen). Made some plastic stuff for out there. Met some cool people in here.
-</p>
+I work on practical AI systems for teams that need clearer documents, safer automation, and evidence-bound workflows.
 
 </div>
 
-## able-to-answer local setup
+## Focus
 
-This repository contains a single FastAPI service backed by SQLite. It does not require a separate frontend, database server, or Node.js development server.
+- AI-assisted development and multi-agent workflow design
+- Retrieval-augmented AI, document intelligence, and source-grounded outputs
+- Responsible AI, review gates, audit trails, observability, and reproducibility
+- Consulting assets, technical writing, and practical build notes
 
-### 1. Configure environment
+## Operating principle
 
-Copy the example environment file and adjust values only if needed:
+> Agentic tools increase output. Skill, scope, architecture, review, and closure decide what survives.
 
-```bash
-cp .env.example .env
-```
+## Current direction
 
-The defaults are safe for local development. Do not commit real secrets or local `.env` files.
+I am building a consulting and development practice around practical AI systems, document workflows, and evidence-bound automation.
 
-### 2. Install dependencies
+The work here is a mix of:
 
-Install the package and development dependencies into Python 3:
+- working prototypes
+- research notes
+- workflow patterns
+- developer experiments
+- public writing support material
 
-```bash
-python3 -m pip install -e ".[dev]" --break-system-packages
-```
+Not every repository is production-ready. I separate experiments, references, and approved artefacts deliberately.
 
-### 3. Start the API
+## Featured build lanes
 
-Run the FastAPI service with Python 3:
+| Lane | What it shows |
+| --- | --- |
+| KinSync | Product thinking, app structure, and user-centred workflow design |
+| Able to Answer | Document intelligence, question answering, retrieval, citations, and auditability |
+| Able to Analyze | Review, analysis, and structured interpretation workflows |
+| Research Repo | Source-bound research intake and pattern extraction |
+| Humanizer | Editing, rewriting, and tone transformation workflows |
+| TrainKit | Training material, reusable templates, and skill-building systems |
 
-```bash
-python3 -m able_to_answer --host 0.0.0.0 --port 8000
-```
+## How I build
 
-For autoreload during development, add `--reload`.
+- Start from the document, source, or workflow, not from the model.
+- Keep human review in the loop where authority or risk matters.
+- Treat summaries as working material, not evidence.
+- Use version control, issue notes, review prompts, and closure notes to avoid drift.
+- Prefer small, testable systems over inflated automation claims.
 
-The health check is available at:
+## Looking for
 
-```text
-GET http://localhost:8000/health
-```
+- AI workflow and document intelligence consulting conversations
+- Build partnerships around safe intake, RAG, review systems, and workflow automation
+- Public writing and community contribution around evidence-bound AI work
 
-Expected response:
+## Contact
 
-```json
-{"status":"ok"}
-```
-
-### 4. Run tests
-
-```bash
-python3 -m pytest tests/ -v
-```
-
-## Deployment notes
-
-Set production environment variables in the target hosting platform rather than committing them to the repository. At minimum, configure `ATA_DB_PATH` to an appropriate persistent SQLite path for the deployment environment.
+- GitHub: @9TEVE-O
+- Name: Steven Lees
