@@ -103,10 +103,10 @@ function TactileButton({ children, variant = "primary", disabled, loading, onCli
   return <button aria-label={ariaLabel} type={type} disabled={disabled || loading} onClick={onClick} className={`tactile-button ${variant} ${className}`}>{loading ? "Saving..." : children}</button>;
 }
 
-function InkField({ label, value, onChange, textarea, error, helper, placeholder, disabled }: { label: string; value: string; onChange: (value: string) => void; textarea?: boolean; error?: string; helper?: string; placeholder?: string; disabled?: boolean }) {
-  const id = label.toLowerCase().replace(/\W+/g, "-");
+function InkField({ label, value, onChange, onBlur, textarea, error, helper, placeholder, disabled }: { label: string; value: string; onChange: (value: string) => void; onBlur?: () => void; textarea?: boolean; error?: string; helper?: string; placeholder?: string; disabled?: boolean }) {
+  const id = label.toLowerCase().replace(/\\W+/g, "-");
   const Field = textarea ? "textarea" : "input";
-  return <label className="block" htmlFor={id}><span className="mb-2 block font-semibold text-[var(--ink)]">{label}</span><Field id={id} disabled={disabled} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className={`ink-field ${textarea ? "min-h-28" : ""} ${error ? "field-error" : ""}`} />{helper ? <span className="mt-1 block text-sm text-[var(--mutedInk)]">{helper}</span> : null}{error ? <span className="mt-1 block text-sm font-semibold text-[var(--cranberry)]">{error}</span> : null}</label>;
+  return <label className="block" htmlFor={id}><span className="mb-2 block font-semibold text-[var(--ink)]">{label}</span><Field id={id} disabled={disabled} value={value} onChange={(event) => onChange(event.target.value)} onBlur={onBlur} placeholder={placeholder} className={`ink-field ${textarea ? "min-h-28" : ""} ${error ? "field-error" : ""}`} />{helper ? <span className="mt-1 block text-sm text-[var(--mutedInk)]">{helper}</span> : null}{error ? <span className="mt-1 block text-sm font-semibold text-[var(--cranberry)]">{error}</span> : null}</label>;
 }
 
 function PaperToast({ toast }: { toast: Toast }) {
