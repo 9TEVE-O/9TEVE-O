@@ -163,7 +163,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [activeStepIndex, setActiveStepIndex] = useState(0);
-  const [checkedIngredients, setCheckedIngredients] = useState<Set<string>>(new Set());
+  const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const selectedRecipe = useMemo(() => recipes.find((recipe) => recipe.id === selectedRecipeId) ?? recipes[0], [recipes, selectedRecipeId]);
   useEffect(() => { if (toast) { const id = window.setTimeout(() => setToast(null), 3200); return () => window.clearTimeout(id); } }, [toast]);
