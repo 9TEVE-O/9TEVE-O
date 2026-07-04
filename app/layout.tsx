@@ -2,13 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Evidence-first AI Portfolio",
-  description: "A recruiter-friendly portfolio grounded in structured project evidence.",
+  title: "The Rustic Ledger",
+  description: "A tactile family recipe-book prototype with active cook mode.",
 };
 
-/**
- * Root layout component that wraps the entire application with HTML structure.
- */
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
