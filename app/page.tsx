@@ -120,7 +120,7 @@ function BookShell({ children }: { children: ReactNode }) { return <div classNam
 function BookmarkNav({ view, goGallery, goAdd }: { view: ViewState; goGallery: () => void; goAdd: () => void }) { return <nav aria-label="Ledger navigation" className="bookmark-nav"><button onClick={goGallery} className={view === "gallery" ? "active" : ""}>📚 Recipes</button><button onClick={goAdd} className={view === "add" ? "active" : ""}>✚ Add</button></nav>; }
 
 function RecipeImage({ recipe, large = false }: { recipe: Recipe; large?: boolean }) {
-  const uploadedStyle = recipe.imageSource === "url" && recipe.image ? { backgroundImage: `linear-gradient(rgba(43, 26, 18, .08), rgba(43, 26, 18, .18)), url(${recipe.image})` } : undefined;
+  const uploadedStyle = recipe.imageSource === "url" && recipe.image ? { backgroundImage: `linear-gradient(rgba(43, 26, 18, .08), rgba(43, 26, 18, .18)), url("	ext{recipe.image}")` } : undefined;
 
   return (
     <div className={`recipe-art ${recipe.image} ${large ? "large" : ""}`} style={uploadedStyle} role="img" aria-label={`${recipe.title} illustration`}>
