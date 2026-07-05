@@ -449,3 +449,54 @@ def test_settings_minimum_valid_chunk_size():
     assert s.chunk_size_chars == 1
     assert s.max_context_chunks == 1
     assert s.max_answer_chars == 1
+
+
+def test_settings_chunk_size_checked_before_overlap():
+    """When both chunk_size_chars and chunk_overlap_chars are invalid, the
+    chunk_size_chars check (first in __post_init__) should raise, not the
+    overlap check."""
+    with pytest.raises(ValueError, match="ATA_CHUNK_SIZE_CHARS"):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=0,
+            chunk_overlap_chars=-1,
+            max_context_chunks=6,
+            max_answer_chars=1800,
+        )
+
+
+def test_settings_max_context_chunks_checked_before_max_answer_chars():
+    """When both max_context_chunks and max_answer_chars are invalid, the
+    max_context_chunks check (earlier in __post_init__) should raise first."""
+    with pytest.raises(ValueError, match="ATA_MAX_CONTEXT_CHUNKS"):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=1200,
+            chunk_overlap_chars=200,
+            max_context_chunks=0,
+            max_answer_chars=0,
+        )
+
+
+def test_settings_error_message_includes_offending_value():
+    """Error messages should embed the actual invalid value to aid debugging."""
+    with pytest.raises(ValueError, match=r"got -7"):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=-7,
+            chunk_overlap_chars=0,
+            max_context_chunks=6,
+            max_answer_chars=1800,
+        )
+
+
+def test_settings_overlap_error_message_includes_both_values():
+    """The overlap-vs-size error message should reference both offending values."""
+    with pytest.raises(ValueError, match=r"got 300.*got 200"):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=200,
+            chunk_overlap_chars=300,
+            max_context_chunks=6,
+            max_answer_chars=1800,
+        )
