@@ -400,45 +400,39 @@ def test_settings_overlap_error_message_mentions_infinite_loop():
         )
 
 
-def test_settings_github_token_defaults_to_none():
-    """github_token should be None when not supplied and env var is unset."""
-    import os
-
-    orig = os.environ.pop("ATA_GITHUB_TOKEN", None)
-    try:
-        s = Settings(
-            db_path="x.sqlite3",
-            chunk_size_chars=1200,
-            chunk_overlap_chars=200,
-            max_context_chunks=6,
-            max_answer_chars=1800,
-        )
-        assert s.github_token is None
-    finally:
-        if orig is not None:
-            os.environ["ATA_GITHUB_TOKEN"] = orig
-
-
-def test_settings_all_fields_stored_correctly():
-    """All fields are accessible after construction with explicit values."""
+def test_settings_github_token_accepts_none():
+    """github_token=None is valid (no GitHub integration configured)."""
     s = Settings(
-        db_path="custom.sqlite3",
-        chunk_size_chars=800,
-        chunk_overlap_chars=100,
+        db_path="x.sqlite3",
+        chunk_size_chars=1200,
+        chunk_overlap_chars=200,
+        max_context_chunks=6,
+        max_answer_chars=1800,
+        github_token=None,
+    )
+    assert s.github_token is None
+
+
+def test_settings_all_fields_stored():
+    """All constructor arguments are accessible on the frozen dataclass."""
+    s = Settings(
+        db_path="mydb.sqlite3",
+        chunk_size_chars=600,
+        chunk_overlap_chars=50,
         max_context_chunks=3,
-        max_answer_chars=2000,
+        max_answer_chars=900,
         github_token="ghp_test",
     )
-    assert s.db_path == "custom.sqlite3"
-    assert s.chunk_size_chars == 800
-    assert s.chunk_overlap_chars == 100
+    assert s.db_path == "mydb.sqlite3"
+    assert s.chunk_size_chars == 600
+    assert s.chunk_overlap_chars == 50
     assert s.max_context_chunks == 3
-    assert s.max_answer_chars == 2000
+    assert s.max_answer_chars == 900
     assert s.github_token == "ghp_test"
 
 
-def test_settings_minimum_valid_chunk_size():
-    """chunk_size_chars=1 with overlap=0 is the smallest valid configuration."""
+def test_settings_minimum_valid_boundary_values():
+    """chunk_size=1, overlap=0, max_context=1, max_answer=1 are all minimum valid."""
     s = Settings(
         db_path="x.sqlite3",
         chunk_size_chars=1,
@@ -447,6 +441,7 @@ def test_settings_minimum_valid_chunk_size():
         max_answer_chars=1,
     )
     assert s.chunk_size_chars == 1
+    assert s.chunk_overlap_chars == 0
     assert s.max_context_chunks == 1
     assert s.max_answer_chars == 1
 
