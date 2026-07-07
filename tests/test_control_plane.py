@@ -1,5 +1,7 @@
-"""Integration tests for the Control Plane API (/v1/*)."""
 from __future__ import annotations
+
+import logging
+import time
 
 import pytest
 from fastapi.testclient import TestClient
@@ -43,6 +45,50 @@ def _create_task(client, run_id, *, task_type="code", agent_role="coder"):
         f"/v1/runs/{run_id}/tasks",
         json={"type": task_type, "agent_role": agent_role},
     )
+
+
+def _dispatch(client, task_id, *, action_type="GIT_COMMIT"):
+    return client.post(
+        f"/v1/tasks/{task_id}/dispatch",
+        json={
+            "actor": {"agent_id": "agent_1", "role": "coder"},
+            "action_type": action_type,
+        },
+    )
+
+
+def _dispatch_envelope(
+    client,
+    task_id,
+    run_id,
+    *,
+    action_type,
+    tenant_id="tenant_1",
+    policy_profile_id="default",
+    envelope_task_id=None,
+):
+    return client.post(
+        f"/v1/tasks/{task_id}/dispatch",
+        json={
+            "envelope": {
+                "run_id": run_id,
+                "task_id": envelope_task_id or task_id,
+                "actor": {"agent_id": "agent_1", "role": "coder"},
+                "tenant_id": tenant_id,
+                "policy_profile_id": policy_profile_id,
+                "requested_action": {"type": action_type, "params": {}},
+            }
+        },
+    )
+
+
+def _task_status(task_id):
+    return cp_router_module.cp_store.get_task(task_id=task_id)["status"]
+
+
+def _policy_decisions():
+    with cp_router_module.cp_store._connect() as con:
+        return con.execute("SELECT * FROM cp_policy_decisions ORDER BY created_at").fetchall()
 
 
 # ─────────────────────────────────────────────────────────
@@ -144,64 +190,316 @@ def test_create_and_list_tasks(client):
     assert tasks[0]["task_id"] == data["task_id"]
 
 
-def test_dispatch_task_non_side_effect_allowed(client):
-    """A non-side-effect action (GIT_COMMIT) should be dispatched immediately."""
+def test_dispatch_task_allowed(client):
+    """Allowed shorthand requests are recorded and dispatched."""
     run_id = _create_run(client).json()["run_id"]
     task_id = _create_task(client, run_id).json()["task_id"]
 
-    resp = client.post(
-        f"/v1/tasks/{task_id}/dispatch",
-        json={"action_type": "GIT_COMMIT"},
-    )
+    resp = _dispatch(client, task_id)
+
     assert resp.status_code == 200
-    data = resp.json()
-    assert data["status"] == "dispatched"
-    assert data["policy_decision"] == "allow"
+    assert resp.json()["status"] == "dispatched"
+    assert resp.json()["policy_decision"] == "allow"
+    assert _task_status(task_id) == "dispatched"
+    assert _policy_decisions()[0]["decision"] == "allow"
 
 
-def test_dispatch_task_side_effect_requires_approval(client):
-    """A side-effect action (GIT_PUSH) with the default profile → awaiting_approval."""
-    run_id = _create_run(client, policy_profile_id="default").json()["run_id"]
-    task_id = _create_task(client, run_id).json()["task_id"]
-
-    resp = client.post(
-        f"/v1/tasks/{task_id}/dispatch",
-        json={"action_type": "GIT_PUSH"},
-    )
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["status"] == "awaiting_approval"
-    assert data["policy_decision"] == "pending_approval"
-
-
-def test_dispatch_task_side_effect_denied_by_strict_profile(client):
-    """A side-effect action with the strict profile → 403."""
+def test_dispatch_task_denied(client):
+    """Denied envelope requests are recorded and remain pending."""
     run_id = _create_run(client, policy_profile_id="strict").json()["run_id"]
     task_id = _create_task(client, run_id).json()["task_id"]
 
-    resp = client.post(
-        f"/v1/tasks/{task_id}/dispatch",
-        json={"action_type": "GIT_PUSH"},
+    resp = _dispatch_envelope(
+        client, task_id, run_id, action_type="GIT_PUSH", policy_profile_id="strict"
     )
+
     assert resp.status_code == 403
+    assert resp.json()["detail"]["policy_decision"] == "deny"
+    assert _task_status(task_id) == "pending"
+    assert _policy_decisions()[0]["decision"] == "deny"
 
 
-def test_approve_run_promotes_awaiting_tasks(client):
-    """Approving a run should transition awaiting_approval tasks to dispatched."""
-    run_id = _create_run(client, policy_profile_id="default").json()["run_id"]
+def test_dispatch_task_approval_required(client):
+    """Approval-required envelope requests are recorded and await approval."""
+    run_id = _create_run(client).json()["run_id"]
     task_id = _create_task(client, run_id).json()["task_id"]
 
-    # Dispatch to put task in awaiting_approval
-    client.post(f"/v1/tasks/{task_id}/dispatch", json={"action_type": "GIT_PUSH"})
+    resp = _dispatch_envelope(client, task_id, run_id, action_type="GIT_PUSH")
 
-    # Approve the run
-    resp = client.post(f"/v1/runs/{run_id}/approve", json={"approved_by": "alice"})
     assert resp.status_code == 200
-    assert resp.json()["approved_tasks"] == 1
+    assert resp.json()["status"] == "awaiting_approval"
+    assert resp.json()["policy_decision"] == "pending_approval"
+    assert _task_status(task_id) == "awaiting_approval"
+    assert _policy_decisions()[0]["decision"] == "pending_approval"
 
-    # Verify task is now dispatched
-    tasks = client.get(f"/v1/runs/{run_id}/tasks").json()
-    assert tasks[0]["status"] == "dispatched"
+
+def test_dispatch_task_mismatched_tenant(client):
+    """An envelope cannot cross the run's stored tenant boundary."""
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+
+    resp = _dispatch_envelope(
+        client, task_id, run_id, action_type="GIT_COMMIT", tenant_id="tenant_2"
+    )
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "dispatch_tenant_id_mismatch"
+    assert _task_status(task_id) == "pending"
+    assert _policy_decisions() == []
+
+
+def test_dispatch_task_mismatched_run(client):
+    """An envelope cannot claim a run other than the task's parent run."""
+    run_id = _create_run(client).json()["run_id"]
+    other_run_id = _create_run(client, goal="Other run").json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+
+    resp = _dispatch_envelope(client, task_id, other_run_id, action_type="GIT_COMMIT")
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "dispatch_run_id_mismatch"
+    assert _task_status(task_id) == "pending"
+    assert _policy_decisions() == []
+
+
+def test_dispatch_task_mismatched_task(client):
+    """An envelope cannot claim a task other than the path task."""
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+
+    resp = _dispatch_envelope(
+        client, task_id, run_id, action_type="GIT_COMMIT", envelope_task_id="task_other"
+    )
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "dispatch_task_id_mismatch"
+    assert _task_status(task_id) == "pending"
+    assert _policy_decisions() == []
+
+
+def test_dispatch_task_mismatched_policy_profile(client):
+    """An envelope cannot override the run's stored policy profile."""
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+
+    resp = _dispatch_envelope(
+        client, task_id, run_id, action_type="GIT_COMMIT", policy_profile_id="strict"
+    )
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "dispatch_policy_profile_id_mismatch"
+    assert _task_status(task_id) == "pending"
+    assert _policy_decisions() == []
+
+
+def test_dispatch_task_policy_evaluation_failure_defaults_to_deny(client, monkeypatch):
+    """Evaluation failures fail closed, are recorded, and remain pending."""
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+
+    def fail_evaluation(_envelope):
+        raise RuntimeError("policy backend unavailable")
+
+    monkeypatch.setattr(cp_router_module, "evaluate_action", fail_evaluation)
+    resp = _dispatch(client, task_id)
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"]["policy_decision"] == "deny"
+    assert _task_status(task_id) == "pending"
+    decisions = _policy_decisions()
+    assert decisions[0]["decision"] == "deny"
+    assert decisions[0]["reason"] == "Policy evaluation failed; defaulting to deny."
+
+
+def _create_pending_approval(client, run_id, task_id, *, action_type="GIT_PUSH"):
+    """
+    Mark the specified task as awaiting human approval and create a corresponding pending policy decision in the test control plane store.
+
+    Parameters:
+        action_type (str): The type of action that requires approval (defaults to "GIT_PUSH").
+
+    Returns:
+        dict: The persisted policy decision record for the pending approval.
+    """
+    cp_router_module.cp_store.update_task_status(task_id=task_id, status="awaiting_approval")
+    return cp_router_module.cp_store.record_policy_decision(
+        run_id=run_id,
+        task_id=task_id,
+        action_type=action_type,
+        decision="pending_approval",
+        reason="requires human approval",
+    )
+
+
+def _approval_request(task_id, decision_id, *, action_type="GIT_PUSH", expires_at=None):
+    """
+    Builds a JSON-like approval request payload for tests.
+
+    Parameters:
+        task_id (str): ID of the task the approval pertains to.
+        decision_id (str): ID of the policy decision the approval corresponds to.
+        action_type (str, optional): Action type for the approval (defaults to "GIT_PUSH").
+        expires_at (int | None, optional): Unix timestamp when the approval expires; if omitted, defaults to now + 300 seconds.
+
+    Returns:
+        dict: A mapping with keys:
+            - "task_id": the provided task_id
+            - "decision_id": the provided decision_id
+            - "action_type": the provided or default action_type
+            - "expires_at": expiration timestamp (int)
+            - "note": a short note string ("reviewed")
+    """
+    return {
+        "task_id": task_id,
+        "decision_id": decision_id,
+        "action_type": action_type,
+        "expires_at": expires_at or int(time.time()) + 300,
+        "note": "reviewed",
+    }
+
+
+def _human_headers(**overrides):
+    """
+    Return default HTTP headers that represent a human principal, with optional overrides.
+
+    Parameters:
+        **overrides: Mapping[str, str]
+            Header names and values to merge into and override the defaults.
+
+    Returns:
+        dict: A mapping of header names to values containing the defaults
+        ("X-Principal-ID": "alice", "X-Principal-Type": "human", "X-Trace-ID": "trace-123")
+        with any provided overrides applied.
+    """
+    return {
+        "X-Principal-ID": "alice",
+        "X-Principal-Type": "human",
+        "X-Trace-ID": "trace-123",
+        **overrides,
+    }
+
+
+def test_approve_run_requires_authenticated_identity(client):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+    decision_id = _create_pending_approval(client, run_id, task_id)
+
+    resp = client.post(
+        f"/v1/runs/{run_id}/approve",
+        json=_approval_request(task_id, decision_id),
+    )
+
+    assert resp.status_code == 401
+    assert resp.json()["detail"] == "authenticated_principal_required"
+
+
+def test_approve_run_rejects_mismatched_task(client):
+    """
+    Verifies that approving a run fails when the provided approval decision does not belong to the task being approved.
+
+    Sets up a run with two tasks, records a pending approval linked to the first task, marks the second task as awaiting approval, and posts an approval request referencing the second task but the decision ID for the first; expects an HTTP 409 with detail "approval_decision_mismatch".
+    """
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+    other_task_id = _create_task(client, run_id, task_type="review").json()["task_id"]
+    decision_id = _create_pending_approval(client, run_id, task_id)
+    cp_router_module.cp_store.update_task_status(
+        task_id=other_task_id, status="awaiting_approval"
+    )
+
+    resp = client.post(
+        f"/v1/runs/{run_id}/approve",
+        json=_approval_request(other_task_id, decision_id),
+        headers=_human_headers(),
+    )
+
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "approval_decision_mismatch"
+
+
+def test_approve_run_rejects_duplicate_approval(client):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+    decision_id = _create_pending_approval(client, run_id, task_id)
+    payload = _approval_request(task_id, decision_id)
+
+    assert client.post(
+        f"/v1/runs/{run_id}/approve", json=payload, headers=_human_headers()
+    ).status_code == 200
+    resp = client.post(
+        f"/v1/runs/{run_id}/approve", json=payload, headers=_human_headers()
+    )
+
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "approval_already_recorded"
+
+
+def test_approve_run_rejects_expired_approval(client):
+    """
+    Verify that submitting an approval for a pending decision that has an expired `expires_at` is rejected.
+
+    Posts an approval request with `expires_at` set to a past timestamp and asserts the API responds with HTTP 409 and a JSON `detail` of `"approval_expired"`.
+    """
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+    decision_id = _create_pending_approval(client, run_id, task_id)
+
+    resp = client.post(
+        f"/v1/runs/{run_id}/approve",
+        json=_approval_request(task_id, decision_id, expires_at=int(time.time()) - 1),
+        headers=_human_headers(),
+    )
+
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "approval_expired"
+
+
+def test_approve_run_rejects_agent_principal(client):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+    decision_id = _create_pending_approval(client, run_id, task_id)
+
+    resp = client.post(
+        f"/v1/runs/{run_id}/approve",
+        json=_approval_request(task_id, decision_id),
+        headers=_human_headers(**{"X-Principal-Type": "agent"}),
+    )
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "human_approver_required"
+
+
+def test_approve_run_persists_human_approval_and_emits_audit_event(client, caplog):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+    decision_id = _create_pending_approval(client, run_id, task_id)
+
+    with caplog.at_level(logging.INFO):
+        resp = client.post(
+            f"/v1/runs/{run_id}/approve",
+            json=_approval_request(task_id, decision_id),
+            headers=_human_headers(),
+        )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["decision_id"] == decision_id
+    assert data["task_id"] == task_id
+    assert data["status"] == "dispatched"
+    approval = cp_router_module.cp_store.get_approval(approval_id=data["approval_id"])
+    assert approval.approver_id == "alice"
+    assert approval.decision_id == decision_id
+    assert approval.trace_id == "trace-123"
+    assert cp_router_module.cp_store.get_task(task_id=task_id)["status"] == "dispatched"
+    approval_logs = [
+        record
+        for record in caplog.records
+        if record.getMessage() == "run_approved"
+    ]
+    assert approval_logs
+    approval_data = approval_logs[-1].structured_data
+    assert approval_data["approval_id"] == data["approval_id"]
+    assert approval_data["decision_id"] == decision_id
 
 
 def test_complete_task(client):
@@ -209,7 +507,7 @@ def test_complete_task(client):
     task_id = _create_task(client, run_id).json()["task_id"]
 
     # Dispatch first
-    client.post(f"/v1/tasks/{task_id}/dispatch", json={"action_type": "GIT_COMMIT"})
+    _dispatch(client, task_id)
 
     # Complete
     resp = client.post(
@@ -240,7 +538,10 @@ def test_list_tasks_run_not_found(client):
 def test_dispatch_task_not_found(client):
     resp = client.post(
         "/v1/tasks/task_doesnotexist/dispatch",
-        json={"action_type": "GIT_COMMIT"},
+        json={
+            "actor": {"agent_id": "agent_1", "role": "coder"},
+            "action_type": "GIT_COMMIT",
+        },
     )
     assert resp.status_code == 404
 
@@ -248,8 +549,8 @@ def test_dispatch_task_not_found(client):
 def test_dispatch_already_dispatched_task_returns_409(client):
     run_id = _create_run(client).json()["run_id"]
     task_id = _create_task(client, run_id).json()["task_id"]
-    client.post(f"/v1/tasks/{task_id}/dispatch", json={"action_type": "GIT_COMMIT"})
-    resp = client.post(f"/v1/tasks/{task_id}/dispatch", json={"action_type": "GIT_COMMIT"})
+    _dispatch(client, task_id)
+    resp = _dispatch(client, task_id)
     assert resp.status_code == 409
 
 
@@ -313,6 +614,173 @@ def test_artifact_created_via_store_appears_in_list(client, tmp_path):
     assert detail_resp.status_code == 200
     detail = detail_resp.json()
     assert detail["content"]["plan"] == "..."
+
+
+# ─────────────────────────────────────────────────────────
+# Final audit packs
+# ─────────────────────────────────────────────────────────
+
+def _terminal_audit_pack(client, run_id, tenant_id="tenant_1"):
+    resp = client.get(f"/v1/tenants/{tenant_id}/runs/{run_id}/audit-pack")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["type"] == "final_audit_pack"
+    return data
+
+
+def test_final_audit_pack_published_for_completed_run(client):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(
+        client, run_id, task_type="plan", agent_role="planner"
+    ).json()["task_id"]
+    _dispatch(client, task_id, action_type="READ_FILE")
+    client.post(
+        f"/v1/tasks/{task_id}/complete",
+        json={
+            "status": "completed",
+            "outputs": {
+                "final_response": "done",
+                "validation_results": {"tests": "passed"},
+                "token": "must-not-leak",
+            },
+        },
+    )
+    artifact_id = cp_router_module.cp_store.create_artifact(
+        run_id=run_id,
+        artifact_type="deployment_readiness",
+        content={"ready": True, "api_key": "must-not-leak"},
+    )
+
+    resp = client.patch(f"/v1/runs/{run_id}/status", json={"status": "completed"})
+
+    assert resp.status_code == 200
+    audit = _terminal_audit_pack(client, run_id)
+    content = audit["content"]
+    assert content["run"]["status"] == "completed"
+    assert content["requirement_intent_summary"]["goal"] == "Implement feature X"
+    assert any(
+        artifact["artifact_id"] == artifact_id
+        for artifact in content["selected_artifact_versions"]
+    )
+    assert content["validation_results"][0]["validation"] == {"tests": "passed"}
+    assert any(
+        invocation.get("outcome", {}).get("token") == "[REDACTED]"
+        for invocation in content["redacted_tool_invocations"]
+    )
+    assert any(
+        invocation.get("content", {})
+        .get("requested_action", {})
+        .get("type") == "READ_FILE"
+        for invocation in content["redacted_tool_invocations"]
+    )
+    assert content["deployment_readiness_records"][0]["content"]["api_key"] == "[REDACTED]"
+
+
+def test_final_audit_pack_published_for_failed_run(client):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+    _dispatch(client, task_id)
+    client.post(
+        f"/v1/tasks/{task_id}/complete",
+        json={
+            "status": "failed",
+            "outputs": {
+                "error": "tests failed",
+                "rollback_details": {"reset_to": "HEAD~1"},
+            },
+        },
+    )
+
+    resp = client.patch(f"/v1/runs/{run_id}/status", json={"status": "failed"})
+
+    assert resp.status_code == 200
+    content = _terminal_audit_pack(client, run_id)["content"]
+    assert content["run"]["status"] == "failed"
+    assert (
+        content["failure_and_rollback_details"]["failures"][0]["details"]["error"]
+        == "tests failed"
+    )
+    assert content["failure_and_rollback_details"]["rollbacks"][0]["details"] == {
+        "reset_to": "HEAD~1"
+    }
+
+
+def test_final_audit_pack_published_for_cancelled_run(client):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+    cp_router_module.cp_store.create_artifact(
+        run_id=run_id,
+        artifact_type="runtime_state",
+        content={"phase": "cancel_requested"},
+    )
+
+    resp = client.post(f"/v1/runs/{run_id}/cancel")
+
+    assert resp.status_code == 200
+    content = _terminal_audit_pack(client, run_id)["content"]
+    assert content["run"]["status"] == "cancelled"
+    assert content["runtime_state_records"][0]["content"] == {"phase": "cancel_requested"}
+    assert (
+        content["plan_and_state_transitions"]["state_transitions"][1]["entity_id"]
+        == task_id
+    )
+
+
+def test_final_audit_pack_is_immutable_and_tenant_scoped(client):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+    _dispatch(client, task_id)
+    client.post(f"/v1/runs/{run_id}/cancel")
+    first = _terminal_audit_pack(client, run_id)
+
+    cp_router_module.cp_store.create_artifact(
+        run_id=run_id,
+        artifact_type="evaluation",
+        content={"score": 1},
+    )
+    cp_router_module.cp_store.update_run_status(run_id=run_id, status="cancelled")
+    second = _terminal_audit_pack(client, run_id)
+    wrong_tenant = client.get(f"/v1/tenants/tenant_2/runs/{run_id}/audit-pack")
+
+    assert second["artifact_id"] == first["artifact_id"]
+    assert second["content_hash"] == first["content_hash"]
+    assert second["content"]["evaluation_records"] == []
+    assert wrong_tenant.status_code == 404
+
+
+def test_final_audit_pack_includes_approval_gated_run_records(client):
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+    resp = _dispatch_envelope(client, task_id, run_id, action_type="GIT_PUSH")
+    assert resp.status_code == 200
+    decision_id = _policy_decisions()[0]["id"]
+    approval_resp = client.post(
+        f"/v1/runs/{run_id}/approve",
+        json=_approval_request(task_id, decision_id),
+        headers=_human_headers(),
+    )
+    assert approval_resp.status_code == 200
+    client.post(
+        f"/v1/tasks/{task_id}/complete",
+        json={"status": "completed", "outputs": {"pushed": True}},
+    )
+
+    resp = client.patch(f"/v1/runs/{run_id}/status", json={"status": "completed"})
+
+    assert resp.status_code == 200
+    content = _terminal_audit_pack(client, run_id)["content"]
+    assert content["policy_decisions"][0]["decision"] == "pending_approval"
+    assert content["human_approvals"][0]["approver_id"] == "alice"
+    assert content["monitoring_trace_ids"] == ["trace-123"]
+
+
+def test_audit_pack_unavailable_before_terminal_state(client):
+    run_id = _create_run(client).json()["run_id"]
+
+    resp = client.get(f"/v1/tenants/tenant_1/runs/{run_id}/audit-pack")
+
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "run_not_terminal"
 
 
 # ─────────────────────────────────────────────────────────
@@ -553,3 +1021,4 @@ def test_store_create_artifact_idempotent(tmp_path):
     a1 = store.create_artifact(run_id=run_id, artifact_type="audit_pack", content=content)
     a2 = store.create_artifact(run_id=run_id, artifact_type="audit_pack", content=content)
     assert a1 == a2  # same content → same id (INSERT OR IGNORE)
+

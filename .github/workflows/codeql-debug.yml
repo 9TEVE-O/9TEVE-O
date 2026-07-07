@@ -1,0 +1,64 @@
+name: CodeQL Debugging
+
+on:
+  workflow_dispatch: # Manual trigger only
+
+jobs:
+  debug:
+    name: CodeQL Debug Job
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript-typescript' ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          debug: true
+
+      - name: Install Node dependencies
+        run: |
+          if [ -f package.json ]; then
+            if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
+              npm ci
+            else
+              npm install
+            fi
+            npm run build --if-present
+          fi
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          upload-database: true
+          output: ${{ runner.temp }}/codeql-sarif
+
+      - name: Upload CodeQL debug artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: codeql-debug-artifacts-${{ matrix.language }}
+          # Use the debug-artifacts directory provided by the CodeQL init action when debug: true
+          path: ${{ env.CODEQL_ACTION_DEBUG_ARTIFACTS }}
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload SARIF results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: codeql-sarif-${{ matrix.language }}
+          path: ${{ runner.temp }}/codeql-sarif
+          if-no-files-found: warn
+          retention-days: 7

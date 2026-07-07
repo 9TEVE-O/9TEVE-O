@@ -1,0 +1,100 @@
+name: Governance Sync & Reporting Pipeline
+on:
+  schedule:
+    - cron: "0 0 * * *"  # Daily at midnight UTC
+  workflow_dispatch:     # Manual trigger for testing
+
+jobs:
+  preflight:
+    name: Check prerequisites
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      secrets_available: ${{ steps.check.outputs.secrets_available }}
+    steps:
+      - name: Verify required secrets are configured
+        id: check
+        env:
+          CODEX_API_TOKEN: ${{ secrets.CODEX_API_TOKEN }}
+          STUDIO_REGISTRY_API_KEY: ${{ secrets.STUDIO_REGISTRY_API_KEY }}
+        run: |
+          # Explicit existence check — surfaces missing prerequisites early
+          # so failures are obvious instead of buried in downstream steps.
+          if [ -z "$CODEX_API_TOKEN" ] || [ -z "$STUDIO_REGISTRY_API_KEY" ]; then
+            echo "::warning::Governance secrets are not configured — skipping sync."
+            echo "secrets_available=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "secrets_available=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify required CLI tools exist
+        run: |
+          # Fail fast with a clear message if any expected binary is missing.
+          for cmd in python3 pip; do
+            if ! command -v "$cmd" >/dev/null 2>&1; then
+              echo "::error::Required binary '$cmd' not found (exit 127 risk)."
+              exit 1
+            fi
+          done
+          echo "All required binaries present."
+
+  sync-governance-profiles:
+    name: Sync Studio AI → Codex Profiles
+    needs: preflight
+    if: needs.preflight.outputs.secrets_available == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: pip install -e ".[governance]"
+
+      - name: Run Governance Sync
+        env:
+          CODEX_API_TOKEN: ${{ secrets.CODEX_API_TOKEN }}
+          STUDIO_REGISTRY_API_KEY: ${{ secrets.STUDIO_REGISTRY_API_KEY }}
+          STUDIO_REGISTRY_BASE: ${{ secrets.STUDIO_REGISTRY_BASE }}
+          CODEX_BASE: ${{ secrets.CODEX_BASE }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_COMPLIANCE_DB: ${{ secrets.NOTION_COMPLIANCE_DB }}
+        run: |
+          python scripts/sync_studio_to_codex.py > sync.log
+          cat sync.log
+
+      - name: Upload Sync Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sync_output
+          path: sync.log
+
+      - name: Fail on Critical Sync Errors
+        if: failure()
+        run: |
+          echo "::error::Governance profile sync failed"
+          exit 1
+
+  generate-compliance-report:
+    name: Generate Monthly Compliance Report
+    needs: [preflight, sync-governance-profiles]
+    if: needs.preflight.outputs.secrets_available == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: pip install -e ".[governance]"
+
+      - name: Run Compliance Reporting
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_COMPLIANCE_REPORT_DB: ${{ secrets.NOTION_COMPLIANCE_REPORT_DB }}
+        run: |
+          python scripts/generate_compliance_report.py

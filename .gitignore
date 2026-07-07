@@ -10,8 +10,9 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
+!lib/
 parts/
 sdist/
 var/
@@ -61,6 +62,8 @@ temp/
 
 # SQLite databases
 *.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
 
 # Node.js (if applicable)
 node_modules/
@@ -69,3 +72,6 @@ package-lock.json
 # OS
 Thumbs.db
 .DS_Store
+# Next.js build artifacts
+.next/
+tsconfig.tsbuildinfo

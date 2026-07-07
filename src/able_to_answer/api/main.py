@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import asdict
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 
 from able_to_answer.api.models import (
@@ -25,6 +25,19 @@ from able_to_answer.core.logging import logger
 from able_to_answer.core.storage import SqliteStore
 from able_to_answer.ingestion.service import ingest_text
 from able_to_answer.retrieval.service import retrieve_top_chunks
+from able_to_answer.core.logging import (
+    get_traceparent,
+    logger,
+    parse_or_generate_traceparent,
+    reset_log_context,
+    set_log_context,
+    trace_headers,
+)
+from able_to_answer.core.storage import SqliteStore
+from able_to_answer.github_search.router import router as gh_router
+from able_to_answer.ingestion.service import ingest_text
+from able_to_answer.retrieval.service import retrieve_top_chunks
+from able_to_answer.suggest_upgrades.router import router as su_router
 
 app = FastAPI(
     title="Able to Answer",
@@ -33,8 +46,38 @@ app = FastAPI(
 )
 
 app.include_router(cp_router)
+app.include_router(gh_router)
+app.include_router(su_router)
 
 store = SqliteStore(settings.db_path)
+
+
+def _request_context_ids(request: Request) -> tuple[str, str, str]:
+    tenant_id = request.headers.get("X-Tenant-ID", "")
+    run_id = request.path_params.get("run_id", "") if request.path_params else ""
+    task_id = request.path_params.get("task_id", "") if request.path_params else ""
+    return tenant_id, run_id, task_id
+
+
+@app.middleware("http")
+async def telemetry_context_middleware(request: Request, call_next):
+    trace_context = parse_or_generate_traceparent(request.headers.get("traceparent"))
+    tenant_id, run_id, task_id = _request_context_ids(request)
+    tokens = set_log_context(
+        trace_id=trace_context["trace_id"],
+        span_id=trace_context["span_id"],
+        tenant_id=tenant_id,
+        run_id=run_id,
+        task_id=task_id,
+    )
+    request.state.traceparent = get_traceparent()
+    request.state.trace_headers = trace_headers()
+    try:
+        response = await call_next(request)
+    finally:
+        reset_log_context(tokens)
+    response.headers["traceparent"] = trace_context.traceparent
+    return response
 
 
 @app.get("/health")
@@ -123,7 +166,16 @@ def ask(req: AskRequest):
         pack=pack,
     )
 
-    logger.info("ask: doc=%s audit=%s citations=%d", req.document_id, audit_id, len(citations))
+    logger.info(
+        "ask_completed",
+        data={
+            "document_id": req.document_id,
+            "audit_id": audit_id,
+            "citation_count": len(citations),
+            "data_tags": ["sensitive"],
+            "prompt": req.question,
+        },
+    )
 
     return AskResponse(
         document_id=req.document_id,
@@ -207,7 +259,10 @@ def submit_feedback(req: FeedbackRequest):
     )
     row = store.get_feedback(feedback_id=feedback_id)
 
-    logger.info("feedback: audit=%s feedback=%s rating=%d", req.audit_id, feedback_id, req.rating)
+    logger.info(
+        "feedback_submitted",
+        data={"audit_id": req.audit_id, "feedback_id": feedback_id, "rating": req.rating},
+    )
 
     return FeedbackResponse(
         feedback_id=row["id"],

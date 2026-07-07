@@ -99,10 +99,26 @@ paths:
   /runs/{run_id}/approve:
     post:
       operationId: approveRun
-      summary: Approve all tasks currently awaiting human approval in a run
+      summary: Approve one gated task using an authenticated human principal
       tags: [runs]
       parameters:
         - $ref: "#/components/parameters/RunId"
+        - in: header
+          name: X-Principal-ID
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: X-Principal-Type
+          required: true
+          schema:
+            type: string
+            enum: [human]
+        - in: header
+          name: X-Trace-ID
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -111,18 +127,31 @@ paths:
               $ref: "#/components/schemas/ApproveRequest"
       responses:
         "200":
-          description: Approval recorded; count of promoted tasks returned
+          description: Approval persisted and the single gated task dispatched
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  run_id:
+                  approval_id:
                     type: string
-                  approved_tasks:
-                    type: integer
+                  decision_id:
+                    type: string
+                  task_id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [dispatched]
+        "400":
+          description: Trace ID is required
+        "401":
+          description: Authenticated principal is required
+        "403":
+          description: Principal is not an authorized human approver
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
 
   # ──────────────────────────────────────────────────────
   # Tasks
@@ -500,13 +529,27 @@ components:
 
     DispatchTaskRequest:
       type: object
-      required: [action_type]
+      description: Provide either a complete action envelope or shorthand fields used with stored task and run context.
+      oneOf:
+        - required: [envelope]
+          not:
+            anyOf:
+              - required: [actor]
+              - required: [action_type]
+        - required: [actor, action_type]
+          not:
+            required: [envelope]
       properties:
+        envelope:
+          $ref: "#/components/schemas/ActionEnvelope"
+        actor:
+          $ref: "#/components/schemas/Actor"
         action_type:
           type: string
-          description: "Action type for policy evaluation"
+          description: "Action type used with actor and stored context to construct an envelope"
         inputs:
           type: object
+          description: "Action parameters used with action_type"
           additionalProperties: true
 
     CompleteTaskRequest:
@@ -600,10 +643,17 @@ components:
 
     ApproveRequest:
       type: object
+      required: [task_id, decision_id, action_type, expires_at]
       properties:
-        approved_by:
+        task_id:
           type: string
-          nullable: true
+        decision_id:
+          type: string
+        action_type:
+          type: string
+        expires_at:
+          type: integer
+          format: int64
         note:
           type: string
           nullable: true
