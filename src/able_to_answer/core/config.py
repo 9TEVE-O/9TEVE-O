@@ -16,38 +16,30 @@ class Settings:
     def __post_init__(self) -> None:
         if self.chunk_size_chars <= 0:
             raise ValueError(
-                f"ATA_CHUNK_SIZE_CHARS must be > 0, got {self.chunk_size_chars}"
+                f"ATA_CHUNK_SIZE_CHARS must be > 0, got "
+                f"{self.chunk_size_chars}."
             )
         if self.chunk_overlap_chars < 0:
             raise ValueError(
-                f"ATA_CHUNK_OVERLAP_CHARS must be >= 0, got {self.chunk_overlap_chars}"
+                f"ATA_CHUNK_OVERLAP_CHARS must be >= 0, got "
+                f"{self.chunk_overlap_chars}."
             )
         if self.chunk_overlap_chars >= self.chunk_size_chars:
             raise ValueError(
-                f"ATA_CHUNK_OVERLAP_CHARS ({self.chunk_overlap_chars}) must be "
-                f"strictly less than ATA_CHUNK_SIZE_CHARS ({self.chunk_size_chars}) "
-                "to prevent an infinite loop in the chunker."
+                "ATA_CHUNK_OVERLAP_CHARS must be less than "
+                "ATA_CHUNK_SIZE_CHARS, got "
+                f"{self.chunk_overlap_chars} and {self.chunk_size_chars}."
             )
         if self.max_context_chunks <= 0:
             raise ValueError(
-                f"ATA_MAX_CONTEXT_CHUNKS must be > 0, got {self.max_context_chunks}"
+                f"ATA_MAX_CONTEXT_CHUNKS must be > 0, got "
+                f"{self.max_context_chunks}."
             )
         if self.max_answer_chars <= 0:
             raise ValueError(
-                f"ATA_MAX_ANSWER_CHARS must be > 0, got {self.max_answer_chars}"
+                f"ATA_MAX_ANSWER_CHARS must be > 0, got "
+                f"{self.max_answer_chars}."
             )
-            raise ValueError("chunk_size_chars (ATA_CHUNK_SIZE_CHARS) must be greater than 0")
-        if self.chunk_overlap_chars < 0:
-            raise ValueError("chunk_overlap_chars (ATA_CHUNK_OVERLAP_CHARS) must be greater than or equal to 0")
-        if self.chunk_overlap_chars >= self.chunk_size_chars:
-            raise ValueError(
-                "chunk_overlap_chars (ATA_CHUNK_OVERLAP_CHARS) must be strictly less than "
-                "chunk_size_chars (ATA_CHUNK_SIZE_CHARS) to avoid an infinite loop while chunking"
-            )
-        if self.max_context_chunks <= 0:
-            raise ValueError("max_context_chunks (ATA_MAX_CONTEXT_CHUNKS) must be greater than 0")
-        if self.max_answer_chars <= 0:
-            raise ValueError("max_answer_chars (ATA_MAX_ANSWER_CHARS) must be greater than 0")
 
 
 settings = Settings()
