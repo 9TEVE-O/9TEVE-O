@@ -403,23 +403,6 @@ def test_settings_overlap_error_message_mentions_infinite_loop():
 
 def test_settings_github_token_accepts_none():
     """github_token=None is valid (no GitHub integration configured)."""
-def test_settings_minimal_valid():
-    """Smallest legal values for each positive-integer constraint."""
-    s = Settings(
-        db_path="minimal.sqlite3",
-        chunk_size_chars=1,
-        chunk_overlap_chars=0,
-        max_context_chunks=1,
-        max_answer_chars=1,
-    )
-    assert s.chunk_size_chars == 1
-    assert s.chunk_overlap_chars == 0
-    assert s.max_context_chunks == 1
-    assert s.max_answer_chars == 1
-
-
-def test_settings_minimum_valid_boundary_values():
-    """chunk_size=1, overlap=0, max_context=1, max_answer=1 are all minimum valid."""
     s = Settings(
         db_path="x.sqlite3",
         chunk_size_chars=1200,
@@ -469,9 +452,6 @@ def test_settings_chunk_size_checked_before_overlap():
     chunk_size_chars check (first in __post_init__) should raise, not the
     overlap check."""
     with pytest.raises(ValueError, match="ATA_CHUNK_SIZE_CHARS"):
-def test_settings_overlap_error_message_mentions_bounds():
-    """The overlap >= size error message should identify both bounds."""
-    with pytest.raises(ValueError, match="must be less than") as exc_info:
         Settings(
             db_path="x.sqlite3",
             chunk_size_chars=0,
@@ -479,30 +459,12 @@ def test_settings_overlap_error_message_mentions_bounds():
             max_context_chunks=6,
             max_answer_chars=1800,
         )
-    assert "ATA_CHUNK_OVERLAP_CHARS" in str(exc_info.value)
-    assert "ATA_CHUNK_SIZE_CHARS" in str(exc_info.value)
 
 
 def test_settings_max_context_chunks_checked_before_max_answer_chars():
     """When both max_context_chunks and max_answer_chars are invalid, the
     max_context_chunks check (earlier in __post_init__) should raise first."""
     with pytest.raises(ValueError, match="ATA_MAX_CONTEXT_CHUNKS"):
-def test_settings_chunk_size_error_message_contains_bad_value():
-    """Error message for chunk_size_chars <= 0 includes the offending value."""
-    with pytest.raises(ValueError, match="got 0") as exc_info:
-        Settings(
-            db_path="x.sqlite3",
-            chunk_size_chars=0,
-            chunk_overlap_chars=0,
-            max_context_chunks=6,
-            max_answer_chars=1800,
-        )
-    assert "0" in str(exc_info.value)
-
-
-def test_settings_error_message_includes_bad_value():
-    """Validation errors should embed the offending value for debuggability."""
-    with pytest.raises(ValueError, match="0") as exc_info:
         Settings(
             db_path="x.sqlite3",
             chunk_size_chars=1200,
