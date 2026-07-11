@@ -11,6 +11,10 @@ install:
 	pip install -e ".[dev]"
 
 run:
+	uvicorn able_to_answer.api.main:app --reload --host 0.0.0.0 --port 8000
+
+test:
+	python -m pytest tests/ -v
 	PYTHONPATH=src python -m able_to_answer --reload --host 0.0.0.0 --port 8000
 
 test:
