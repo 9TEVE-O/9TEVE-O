@@ -27,6 +27,28 @@ def test_health(client):
     assert resp.json() == {"status": "ok"}
 
 
+def test_main_module_exposes_consolidated_imports():
+    """Regression: main.py's imports were de-duplicated into a single
+    logging import block. Every symbol the route handlers rely on must
+    still be reachable on the module after that cleanup."""
+    import able_to_answer.api.main as main_module
+
+    for name in (
+        "logger",
+        "get_traceparent",
+        "parse_or_generate_traceparent",
+        "reset_log_context",
+        "set_log_context",
+        "trace_headers",
+        "SqliteStore",
+        "ingest_text",
+        "retrieve_top_chunks",
+        "settings",
+        "build_audit_pack",
+    ):
+        assert hasattr(main_module, name), f"main module missing expected import: {name}"
+
+
 def test_ingest_text(client):
     resp = client.post(
         "/ingest/text",

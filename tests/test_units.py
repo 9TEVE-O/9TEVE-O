@@ -6,7 +6,6 @@ from collections import Counter
 
 import pytest
 
-from able_to_answer.audit.service import build_audit_pack
 from able_to_answer.audit.service import build_audit_pack, self_modelling_pressure
 from able_to_answer.core.config import Settings
 from able_to_answer.core.storage import Citation, SqliteStore
@@ -303,7 +302,6 @@ def test_settings_zero_chunk_size_raises():
 
 
 def test_settings_negative_overlap_raises():
-    with pytest.raises(ValueError, match="ATA_CHUNK_OVERLAP_CHARS"):
     with pytest.raises(ValueError, match=r"ATA_CHUNK_OVERLAP_CHARS.*got -1"):
         Settings(
             db_path="x.sqlite3",
@@ -315,7 +313,6 @@ def test_settings_negative_overlap_raises():
 
 
 def test_settings_zero_max_context_chunks_raises():
-    with pytest.raises(ValueError, match="ATA_MAX_CONTEXT_CHUNKS"):
     with pytest.raises(ValueError, match=r"ATA_MAX_CONTEXT_CHUNKS.*got 0"):
         Settings(
             db_path="x.sqlite3",
@@ -366,8 +363,6 @@ def test_settings_negative_max_answer_chars_raises():
             chunk_size_chars=1200,
             chunk_overlap_chars=200,
             max_context_chunks=6,
-            max_answer_chars=0,
-        )
             max_answer_chars=-100,
         )
 
@@ -503,4 +498,17 @@ def test_settings_overlap_error_message_includes_both_values():
             chunk_overlap_chars=300,
             max_context_chunks=6,
             max_answer_chars=1800,
+        )
+
+
+def test_settings_negative_max_answer_chars_message_includes_value():
+    """Regression: negative max_answer_chars must raise with the offending
+    value embedded in the message (distinct from the zero-value case)."""
+    with pytest.raises(ValueError, match=r"ATA_MAX_ANSWER_CHARS.*got -100"):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=1200,
+            chunk_overlap_chars=200,
+            max_context_chunks=6,
+            max_answer_chars=-100,
         )
