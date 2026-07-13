@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import ast
+from pathlib import Path
+
+import able_to_answer.core.config as config_module
 import pytest
 
 from able_to_answer.core.config import Settings
@@ -187,10 +191,18 @@ def test_settings_chunk_size_checked_before_overlap():
 
 
 def test_settings_defines_post_init_exactly_once():
-    assert Settings.__post_init__.__qualname__ == "Settings.__post_init__"
-    # A dataclass can only ever have one __post_init__ in its __dict__;
-    # this simply asserts it resolves to the canonical implementation.
-    assert "__post_init__" in Settings.__dict__
+    module_ast = ast.parse(Path(config_module.__file__).read_text(encoding="utf-8"))
+    settings_class = next(
+        node
+        for node in module_ast.body
+        if isinstance(node, ast.ClassDef) and node.name == "Settings"
+    )
+    post_init_defs = [
+        node
+        for node in settings_class.body
+        if isinstance(node, ast.FunctionDef) and node.name == "__post_init__"
+    ]
+    assert len(post_init_defs) == 1
 
 
 def test_settings_chunk_size_error_uses_canonical_message_format():
