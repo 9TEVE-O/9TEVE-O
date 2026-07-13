@@ -172,3 +172,73 @@ def test_settings_chunk_size_checked_before_overlap():
     the error raised first should be about chunk_size_chars."""
     with pytest.raises(ValueError, match="chunk_size_chars"):
         _make(chunk_size_chars=0, chunk_overlap_chars=-1)
+
+
+# ---------------------------------------------------------------------------
+# Regression: Settings must define __post_init__ exactly once.
+#
+# A previous version of this module accidentally defined __post_init__
+# twice; the second (duplicate) definition silently shadowed the first
+# and used a different, terser error-message format ("ATA_X must be > 0,
+# got Y" with no field name prefix). These tests pin the *current*,
+# single-definition message format so a regression to the duplicate
+# method would be caught immediately.
+# ---------------------------------------------------------------------------
+
+
+def test_settings_defines_post_init_exactly_once():
+    assert Settings.__post_init__.__qualname__ == "Settings.__post_init__"
+    # A dataclass can only ever have one __post_init__ in its __dict__;
+    # this simply asserts it resolves to the canonical implementation.
+    assert "__post_init__" in Settings.__dict__
+
+
+def test_settings_chunk_size_error_uses_canonical_message_format():
+    with pytest.raises(
+        ValueError,
+        match=r"chunk_size_chars \(ATA_CHUNK_SIZE_CHARS\) must be greater than 0, got 0\.",
+    ):
+        _make(chunk_size_chars=0)
+
+
+def test_settings_chunk_overlap_negative_error_uses_canonical_message_format():
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"chunk_overlap_chars \(ATA_CHUNK_OVERLAP_CHARS\) must be greater "
+            r"than or equal to 0, got -1\."
+        ),
+    ):
+        _make(chunk_overlap_chars=-1)
+
+
+def test_settings_chunk_overlap_size_error_uses_canonical_message_format():
+    """The overlap-vs-size message must use the current wording ("must be
+    less than ... to avoid an infinite loop"), not the removed duplicate's
+    wording ("must be strictly less than ... to prevent an infinite loop
+    in the chunker")."""
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"chunk_overlap_chars \(ATA_CHUNK_OVERLAP_CHARS\) must be less than "
+            r"chunk_size_chars \(ATA_CHUNK_SIZE_CHARS\), got 100 and got 100, "
+            r"to avoid an infinite loop\."
+        ),
+    ):
+        _make(chunk_size_chars=100, chunk_overlap_chars=100)
+
+
+def test_settings_max_context_chunks_error_uses_canonical_message_format():
+    with pytest.raises(
+        ValueError,
+        match=r"max_context_chunks \(ATA_MAX_CONTEXT_CHUNKS\) must be greater than 0, got 0\.",
+    ):
+        _make(max_context_chunks=0)
+
+
+def test_settings_max_answer_chars_error_uses_canonical_message_format():
+    with pytest.raises(
+        ValueError,
+        match=r"max_answer_chars \(ATA_MAX_ANSWER_CHARS\) must be greater than 0, got -100\.",
+    ):
+        _make(max_answer_chars=-100)
