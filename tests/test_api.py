@@ -27,6 +27,34 @@ def test_health(client):
     assert resp.json() == {"status": "ok"}
 
 
+# ---- Telemetry middleware tests ----
+
+def test_traceparent_header_echoed_when_provided(client):
+    inbound = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    resp = client.get("/health", headers={"traceparent": inbound})
+    assert resp.status_code == 200
+    assert resp.headers["traceparent"] == inbound
+
+
+def test_traceparent_header_generated_when_absent(client):
+    resp = client.get("/health")
+    assert resp.status_code == 200
+    traceparent = resp.headers["traceparent"]
+    parts = traceparent.split("-")
+    assert len(parts) == 4
+    assert parts[0] == "00"
+    assert len(parts[1]) == 32
+    assert len(parts[2]) == 16
+
+
+def test_traceparent_header_generated_for_malformed_input(client):
+    resp = client.get("/health", headers={"traceparent": "not-a-valid-traceparent"})
+    assert resp.status_code == 200
+    traceparent = resp.headers["traceparent"]
+    assert traceparent.startswith("00-")
+    assert traceparent != "not-a-valid-traceparent"
+
+
 def test_ingest_text(client):
     resp = client.post(
         "/ingest/text",

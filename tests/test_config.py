@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import dataclasses
+
 import pytest
 
 from able_to_answer.core.config import Settings
@@ -172,3 +174,15 @@ def test_settings_chunk_size_checked_before_overlap():
     the error raised first should be about chunk_size_chars."""
     with pytest.raises(ValueError, match="chunk_size_chars"):
         _make(chunk_size_chars=0, chunk_overlap_chars=-1)
+
+
+# ---------------------------------------------------------------------------
+# Regression: Settings is a frozen dataclass — mutation must be rejected.
+# ---------------------------------------------------------------------------
+
+
+def test_settings_is_frozen():
+    """Settings instances must be immutable after construction."""
+    s = _make()
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        s.chunk_size_chars = 999
