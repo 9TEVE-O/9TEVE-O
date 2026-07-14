@@ -55,15 +55,19 @@ export type PortfolioData = {
   experience: PortfolioExperience[];
 };
 
+const portfolioData: PortfolioData = {
+  profile: profile as PortfolioProfile,
+  projects: projects as PortfolioProject[],
+  skills: skills as PortfolioSkill[],
+  experience: experience as PortfolioExperience[],
+};
+
+const cachedEvidenceText = JSON.stringify(portfolioData, null, 2);
+
 export function getPortfolioData(): PortfolioData {
-  return {
-    profile: profile as PortfolioProfile,
-    projects: projects as PortfolioProject[],
-    skills: skills as PortfolioSkill[],
-    experience: experience as PortfolioExperience[],
-  };
+  return portfolioData;
 }
 
 export function getEvidenceText(): string {
-  return JSON.stringify(getPortfolioData(), null, 2);
+  return cachedEvidenceText;
 }
