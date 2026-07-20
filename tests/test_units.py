@@ -501,10 +501,86 @@ def test_settings_overlap_error_message_includes_both_values():
         )
 
 
-def test_settings_negative_max_answer_chars_message_includes_value():
-    """Regression: negative max_answer_chars must raise with the offending
-    value embedded in the message (distinct from the zero-value case)."""
-    with pytest.raises(ValueError, match=r"ATA_MAX_ANSWER_CHARS.*got -100"):
+# ────────────────────────────────────────────────────────────
+# Regression: exactly one __post_init__ implementation is active.
+#
+# Settings previously defined __post_init__ twice; the second definition
+# silently shadowed the first (last-defined-wins for duplicate method names
+# in a class body), so the terser messages (e.g. "ATA_CHUNK_SIZE_CHARS must
+# be > 0, got 0") were the ones actually raised at runtime even though the
+# more descriptive implementation was defined first. These tests pin the
+# exact message format of the single remaining implementation so a
+# reintroduced duplicate can't silently change validation error text again.
+# ────────────────────────────────────────────────────────────
+
+
+def test_settings_chunk_size_error_message_exact_format():
+    with pytest.raises(
+        ValueError,
+        match=r"^chunk_size_chars \(ATA_CHUNK_SIZE_CHARS\) must be greater "
+        r"than 0, got 0\.$",
+    ):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=0,
+            chunk_overlap_chars=0,
+            max_context_chunks=6,
+            max_answer_chars=1800,
+        )
+
+
+def test_settings_chunk_overlap_negative_error_message_exact_format():
+    with pytest.raises(
+        ValueError,
+        match=r"^chunk_overlap_chars \(ATA_CHUNK_OVERLAP_CHARS\) must be "
+        r"greater than or equal to 0, got -1\.$",
+    ):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=1200,
+            chunk_overlap_chars=-1,
+            max_context_chunks=6,
+            max_answer_chars=1800,
+        )
+
+
+def test_settings_overlap_size_error_message_exact_format():
+    with pytest.raises(
+        ValueError,
+        match=r"^chunk_overlap_chars \(ATA_CHUNK_OVERLAP_CHARS\) must be less "
+        r"than chunk_size_chars \(ATA_CHUNK_SIZE_CHARS\), got 500 and got "
+        r"500, to avoid an infinite loop\.$",
+    ):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=500,
+            chunk_overlap_chars=500,
+            max_context_chunks=6,
+            max_answer_chars=1800,
+        )
+
+
+def test_settings_max_context_chunks_error_message_exact_format():
+    with pytest.raises(
+        ValueError,
+        match=r"^max_context_chunks \(ATA_MAX_CONTEXT_CHUNKS\) must be "
+        r"greater than 0, got 0\.$",
+    ):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=1200,
+            chunk_overlap_chars=200,
+            max_context_chunks=0,
+            max_answer_chars=1800,
+        )
+
+
+def test_settings_max_answer_chars_error_message_exact_format():
+    with pytest.raises(
+        ValueError,
+        match=r"^max_answer_chars \(ATA_MAX_ANSWER_CHARS\) must be greater "
+        r"than 0, got -100\.$",
+    ):
         Settings(
             db_path="x.sqlite3",
             chunk_size_chars=1200,

@@ -27,26 +27,25 @@ def test_health(client):
     assert resp.json() == {"status": "ok"}
 
 
-def test_main_module_exposes_consolidated_imports():
-    """Regression: main.py's imports were de-duplicated into a single
-    logging import block. Every symbol the route handlers rely on must
-    still be reachable on the module after that cleanup."""
-    import able_to_answer.api.main as main_module
+def test_health_response_includes_generated_traceparent_header(client):
+    """The telemetry middleware sets a traceparent header on every response,
+    generating one when the request doesn't supply one."""
+    resp = client.get("/health")
+    assert resp.status_code == 200
+    traceparent = resp.headers["traceparent"]
+    parts = traceparent.split("-")
+    assert len(parts) == 4
+    assert parts[0] == "00"
+    assert len(parts[1]) == 32
+    assert len(parts[2]) == 16
 
-    for name in (
-        "logger",
-        "get_traceparent",
-        "parse_or_generate_traceparent",
-        "reset_log_context",
-        "set_log_context",
-        "trace_headers",
-        "SqliteStore",
-        "ingest_text",
-        "retrieve_top_chunks",
-        "settings",
-        "build_audit_pack",
-    ):
-        assert hasattr(main_module, name), f"main module missing expected import: {name}"
+
+def test_health_response_echoes_inbound_traceparent_header(client):
+    """An inbound traceparent header is parsed and echoed back unchanged."""
+    inbound = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    resp = client.get("/health", headers={"traceparent": inbound})
+    assert resp.status_code == 200
+    assert resp.headers["traceparent"] == inbound
 
 
 def test_ingest_text(client):

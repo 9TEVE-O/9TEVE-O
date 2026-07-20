@@ -5,7 +5,6 @@ import time
 
 import pytest
 from fastapi.testclient import TestClient
-from pydantic import ValidationError
 
 import able_to_answer.control_plane.router as cp_router_module
 from able_to_answer.api.main import app
@@ -556,6 +555,56 @@ def test_dispatch_already_dispatched_task_returns_409(client):
     assert resp.status_code == 409
 
 
+def test_dispatch_task_rejects_both_envelope_and_shorthand(client):
+    """DispatchTaskRequest's model validator rejects a body that supplies
+    both a full envelope and the shorthand actor/action_type fields."""
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+
+    resp = client.post(
+        f"/v1/tasks/{task_id}/dispatch",
+        json={
+            "envelope": {
+                "run_id": run_id,
+                "task_id": task_id,
+                "actor": {"agent_id": "agent_1", "role": "coder"},
+                "tenant_id": "tenant_1",
+                "policy_profile_id": "default",
+                "requested_action": {"type": "GIT_COMMIT", "params": {}},
+            },
+            "actor": {"agent_id": "agent_1", "role": "coder"},
+            "action_type": "GIT_COMMIT",
+        },
+    )
+
+    assert resp.status_code == 422
+
+
+def test_dispatch_task_rejects_neither_envelope_nor_shorthand(client):
+    """DispatchTaskRequest's model validator rejects an empty body that
+    supplies neither an envelope nor the shorthand actor/action_type fields."""
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+
+    resp = client.post(f"/v1/tasks/{task_id}/dispatch", json={})
+
+    assert resp.status_code == 422
+
+
+def test_dispatch_task_rejects_actor_without_action_type(client):
+    """Providing only the actor shorthand field without action_type is
+    incomplete and rejected at the model-validation layer."""
+    run_id = _create_run(client).json()["run_id"]
+    task_id = _create_task(client, run_id).json()["task_id"]
+
+    resp = client.post(
+        f"/v1/tasks/{task_id}/dispatch",
+        json={"actor": {"agent_id": "agent_1", "role": "coder"}},
+    )
+
+    assert resp.status_code == 422
+
+
 def test_complete_task_not_found(client):
     resp = client.post(
         "/v1/tasks/task_doesnotexist/complete",
@@ -921,6 +970,79 @@ def test_evaluate_policy_permissive_allows_side_effect(client):
 
 
 # ─────────────────────────────────────────────────────────
+# Unit tests for DispatchTaskRequest.validate_envelope_source
+# ─────────────────────────────────────────────────────────
+
+
+def test_dispatch_task_request_accepts_envelope_only():
+    req = DispatchTaskRequest(
+        envelope=ActionEnvelope(
+            run_id="run_1",
+            task_id="task_1",
+            actor=Actor(agent_id="agent_1", role="coder"),
+            tenant_id="tenant_1",
+            requested_action=RequestedAction(type="GIT_COMMIT"),
+        )
+    )
+    assert req.envelope is not None
+    assert req.actor is None
+    assert req.action_type is None
+
+
+def test_dispatch_task_request_accepts_shorthand_only():
+    req = DispatchTaskRequest(
+        actor=Actor(agent_id="agent_1", role="coder"),
+        action_type="GIT_COMMIT",
+    )
+    assert req.envelope is None
+    assert req.actor.agent_id == "agent_1"
+    assert req.action_type == "GIT_COMMIT"
+
+
+def test_dispatch_task_request_rejects_envelope_and_actor_together():
+    with pytest.raises(ValueError, match="Provide either envelope or shorthand fields, not both"):
+        DispatchTaskRequest(
+            envelope=ActionEnvelope(
+                run_id="run_1",
+                task_id="task_1",
+                actor=Actor(agent_id="agent_1", role="coder"),
+                tenant_id="tenant_1",
+                requested_action=RequestedAction(type="GIT_COMMIT"),
+            ),
+            actor=Actor(agent_id="agent_1", role="coder"),
+        )
+
+
+def test_dispatch_task_request_rejects_envelope_and_action_type_together():
+    with pytest.raises(ValueError, match="Provide either envelope or shorthand fields, not both"):
+        DispatchTaskRequest(
+            envelope=ActionEnvelope(
+                run_id="run_1",
+                task_id="task_1",
+                actor=Actor(agent_id="agent_1", role="coder"),
+                tenant_id="tenant_1",
+                requested_action=RequestedAction(type="GIT_COMMIT"),
+            ),
+            action_type="GIT_COMMIT",
+        )
+
+
+def test_dispatch_task_request_rejects_neither_envelope_nor_shorthand():
+    with pytest.raises(ValueError, match="Provide envelope or both actor and action_type"):
+        DispatchTaskRequest()
+
+
+def test_dispatch_task_request_rejects_actor_without_action_type():
+    with pytest.raises(ValueError, match="Provide envelope or both actor and action_type"):
+        DispatchTaskRequest(actor=Actor(agent_id="agent_1", role="coder"))
+
+
+def test_dispatch_task_request_rejects_action_type_without_actor():
+    with pytest.raises(ValueError, match="Provide envelope or both actor and action_type"):
+        DispatchTaskRequest(action_type="GIT_COMMIT")
+
+
+# ─────────────────────────────────────────────────────────
 # Unit tests for policy module
 # ─────────────────────────────────────────────────────────
 
@@ -971,66 +1093,6 @@ def test_policy_evaluate_side_effect_denied_strict():
 def test_policy_evaluate_side_effect_allowed_permissive():
     decision, _ = evaluate_action(_envelope("SECRET_ACCESS", "permissive"))
     assert decision == PolicyDecision.allow
-
-
-# ─────────────────────────────────────────────────────────
-# Unit tests for DispatchTaskRequest.validate_envelope_source
-# ─────────────────────────────────────────────────────────
-
-
-def _full_envelope() -> dict:
-    return {
-        "run_id": "run_1",
-        "task_id": "task_1",
-        "actor": {"agent_id": "agent_1", "role": "coder"},
-        "tenant_id": "tenant_1",
-        "requested_action": {"type": "GIT_COMMIT", "params": {}},
-    }
-
-
-def test_dispatch_task_request_accepts_envelope_only():
-    req = DispatchTaskRequest(envelope=_full_envelope())
-    assert req.envelope is not None
-    assert req.actor is None
-    assert req.action_type is None
-
-
-def test_dispatch_task_request_accepts_shorthand_only():
-    req = DispatchTaskRequest(
-        actor={"agent_id": "agent_1", "role": "coder"},
-        action_type="GIT_COMMIT",
-    )
-    assert req.envelope is None
-    assert req.actor.agent_id == "agent_1"
-    assert req.action_type == "GIT_COMMIT"
-
-
-def test_dispatch_task_request_rejects_envelope_and_actor_together():
-    with pytest.raises(ValidationError, match="Provide either envelope or shorthand fields, not both"):
-        DispatchTaskRequest(
-            envelope=_full_envelope(),
-            actor={"agent_id": "agent_1", "role": "coder"},
-        )
-
-
-def test_dispatch_task_request_rejects_envelope_and_action_type_together():
-    with pytest.raises(ValidationError, match="Provide either envelope or shorthand fields, not both"):
-        DispatchTaskRequest(envelope=_full_envelope(), action_type="GIT_COMMIT")
-
-
-def test_dispatch_task_request_rejects_neither_envelope_nor_shorthand():
-    with pytest.raises(ValidationError, match="Provide envelope or both actor and action_type"):
-        DispatchTaskRequest()
-
-
-def test_dispatch_task_request_rejects_actor_without_action_type():
-    with pytest.raises(ValidationError, match="Provide envelope or both actor and action_type"):
-        DispatchTaskRequest(actor={"agent_id": "agent_1", "role": "coder"})
-
-
-def test_dispatch_task_request_rejects_action_type_without_actor():
-    with pytest.raises(ValidationError, match="Provide envelope or both actor and action_type"):
-        DispatchTaskRequest(action_type="GIT_COMMIT")
 
 
 # ─────────────────────────────────────────────────────────
