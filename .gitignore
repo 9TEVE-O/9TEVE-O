@@ -10,7 +10,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -71,3 +70,6 @@ package-lock.json
 # OS
 Thumbs.db
 .DS_Store
+# Next.js build artifacts
+.next/
+tsconfig.tsbuildinfo
