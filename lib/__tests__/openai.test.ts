@@ -22,22 +22,25 @@ import OpenAI from "openai";
 
 const MockedOpenAI = vi.mocked(OpenAI);
 
-describe("createChatCompletion", () => {
-  const originalEnv = process.env;
+const openAIEnvNames = [
+  "ATA_OPENAI_API_KEY",
+  "ATA_OPENAI_BASE_URL",
+  "ATA_OPENAI_MODEL",
+  "OPENAI_API_KEY",
+  "OPENAI_BASE_URL",
+  "OPENAI_MODEL",
+] as const;
 
+describe("createChatCompletion", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    process.env = { ...originalEnv };
-    delete process.env.ATA_OPENAI_API_KEY;
-    delete process.env.ATA_OPENAI_BASE_URL;
-    delete process.env.ATA_OPENAI_MODEL;
-    delete process.env.OPENAI_API_KEY;
-    delete process.env.OPENAI_BASE_URL;
-    delete process.env.OPENAI_MODEL;
+    for (const name of openAIEnvNames) {
+      vi.stubEnv(name, "");
+    }
   });
 
   afterEach(() => {
-    process.env = originalEnv;
+    vi.unstubAllEnvs();
   });
 
   describe("when OPENAI_API_KEY is not set", () => {
