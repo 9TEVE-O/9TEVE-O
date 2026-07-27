@@ -3,7 +3,7 @@ import type { ChatCompletionMessageParam } from "openai/resources/chat/completio
 
 const openAIMocks = vi.hoisted(() => {
   const create = vi.fn();
-  const constructor = vi.fn(function () {
+  const constructor = vi.fn(function MockOpenAI() {
     return {
       chat: {
         completions: {
@@ -24,25 +24,27 @@ import { createChatCompletion } from "../lib/openai";
 
 const messages: ChatCompletionMessageParam[] = [{ role: "user", content: "Summarize this." }];
 
-function clearOpenAIEnv() {
-  delete process.env.ATA_OPENAI_API_KEY;
-  delete process.env.ATA_OPENAI_BASE_URL;
-  delete process.env.ATA_OPENAI_MODEL;
-  delete process.env.OPENAI_API_KEY;
-  delete process.env.OPENAI_BASE_URL;
-  delete process.env.OPENAI_MODEL;
-}
+const openAIEnvNames = [
+  "ATA_OPENAI_API_KEY",
+  "ATA_OPENAI_BASE_URL",
+  "ATA_OPENAI_MODEL",
+  "OPENAI_API_KEY",
+  "OPENAI_BASE_URL",
+  "OPENAI_MODEL",
+] as const;
 
 describe("createChatCompletion", () => {
   beforeEach(() => {
-    clearOpenAIEnv();
+    for (const name of openAIEnvNames) {
+      vi.stubEnv(name, "");
+    }
     openAIMocks.create.mockResolvedValue({
       choices: [{ message: { content: "  AI answer  " } }],
     });
   });
 
   afterEach(() => {
-    clearOpenAIEnv();
+    vi.unstubAllEnvs();
     vi.clearAllMocks();
   });
 
