@@ -3,13 +3,15 @@ import type { ChatCompletionMessageParam } from "openai/resources/chat/completio
 
 const openAIMocks = vi.hoisted(() => {
   const create = vi.fn();
-  const constructor = vi.fn(() => ({
-    chat: {
-      completions: {
-        create,
+  const constructor = vi.fn(function () {
+    return {
+      chat: {
+        completions: {
+          create,
+        },
       },
-    },
-  }));
+    };
+  });
 
   return { constructor, create };
 });

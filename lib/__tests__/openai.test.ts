@@ -28,7 +28,11 @@ describe("createChatCompletion", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     process.env = { ...originalEnv };
+    delete process.env.ATA_OPENAI_API_KEY;
+    delete process.env.ATA_OPENAI_BASE_URL;
+    delete process.env.ATA_OPENAI_MODEL;
     delete process.env.OPENAI_API_KEY;
+    delete process.env.OPENAI_BASE_URL;
     delete process.env.OPENAI_MODEL;
   });
 
