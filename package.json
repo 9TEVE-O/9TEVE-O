@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "audit:evidence": "node --experimental-strip-types scripts/audit-evidence.ts"
+    "audit:evidence": "node --experimental-strip-types --experimental-default-type=module scripts/audit-evidence.ts"
   },
   "dependencies": {
     "next": "^15.0.0",
