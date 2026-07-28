@@ -10,7 +10,7 @@ export async function auditWorkflowEvidence(
 ): Promise<AuditOutput> {
   const validatedInput = AuditInputSchema.parse(input);
   const response = await client.responses.parse({
-    model: environment.OPENAI_MODEL,
+    model: environment.OPENAI_AUDITOR_MODEL,
     prompt: {
       id: environment.OPENAI_AUDITOR_PROMPT_ID,
       version: environment.OPENAI_AUDITOR_PROMPT_VERSION,

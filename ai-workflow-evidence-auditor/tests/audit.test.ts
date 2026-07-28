@@ -15,7 +15,7 @@ describe("auditWorkflowEvidence", () => {
     const parse = vi.fn().mockResolvedValue({ output_parsed: report });
     const client = { responses: { parse } } as never;
     await expect(auditWorkflowEvidence(AuditInputSchema.parse(fixture), {
-      OPENAI_API_KEY: "test", OPENAI_AUDITOR_PROMPT_ID: "pmpt_test", OPENAI_AUDITOR_PROMPT_VERSION: "3", OPENAI_MODEL: "gpt-5.5",
+      OPENAI_API_KEY: "test", OPENAI_AUDITOR_PROMPT_ID: "pmpt_test", OPENAI_AUDITOR_PROMPT_VERSION: "3", OPENAI_AUDITOR_MODEL: "gpt-5.5",
     }, client)).resolves.toEqual(report);
     expect(parse).toHaveBeenCalledWith(expect.objectContaining({
       model: "gpt-5.5", store: false,
@@ -29,7 +29,7 @@ describe("auditWorkflowEvidence", () => {
   it("fails when no parsed output is returned", async () => {
     const client = { responses: { parse: vi.fn().mockResolvedValue({ output_parsed: null }) } } as never;
     await expect(auditWorkflowEvidence(AuditInputSchema.parse(fixture), {
-      OPENAI_API_KEY: "test", OPENAI_AUDITOR_PROMPT_ID: "pmpt_test", OPENAI_AUDITOR_PROMPT_VERSION: "1", OPENAI_MODEL: "gpt-5.5",
+      OPENAI_API_KEY: "test", OPENAI_AUDITOR_PROMPT_ID: "pmpt_test", OPENAI_AUDITOR_PROMPT_VERSION: "1", OPENAI_AUDITOR_MODEL: "gpt-5.5",
     }, client)).rejects.toThrow("no parsed audit output");
   });
 
@@ -42,7 +42,7 @@ describe("auditWorkflowEvidence", () => {
       OPENAI_API_KEY: "test",
       OPENAI_AUDITOR_PROMPT_ID: "pmpt_test",
       OPENAI_AUDITOR_PROMPT_VERSION: "1",
-      OPENAI_MODEL: "gpt-5.5",
+      OPENAI_AUDITOR_MODEL: "gpt-5.5",
     }, client)).rejects.toThrow();
     expect(parse).not.toHaveBeenCalled();
   });
