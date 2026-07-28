@@ -8,7 +8,8 @@
     "lint": "next lint || eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "audit:evidence": "node --experimental-strip-types scripts/audit-evidence.ts"
   },
   "dependencies": {
     "next": "^15.0.0",
