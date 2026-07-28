@@ -62,3 +62,7 @@ Not every repository is production-ready. I separate experiments, references, an
 
 - GitHub: @9TEVE-O
 - Name: Steven Lees
+
+## Private prototypes
+
+- [AI Workflow Evidence Auditor](docs/evidence-auditor.md) — a tool-only Responses API prototype for evidence-bound workflow review.
