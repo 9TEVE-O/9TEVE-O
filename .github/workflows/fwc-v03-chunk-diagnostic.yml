@@ -1,0 +1,26 @@
+name: FWC v0.3 chunk diagnostic
+on:
+  push:
+    branches: [fwc-v03-live-gate-20260827]
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Identify malformed staging chunks
+        run: |
+          set +e
+          BAD=0
+          for f in fwc_gate_stage2/server.*.b64 fwc_gate_stage2/html.*.b64; do
+            base64 -d "$f" >/dev/null 2>&1
+            RC=$?
+            if [ $RC -ne 0 ]; then
+              echo "GATE_BAD_CHUNK=$f"
+              echo "GATE_BAD_CHUNK_BYTES=$(wc -c < "$f")"
+              echo "GATE_BAD_CHUNK_TAIL=$(tail -c 32 "$f")"
+              BAD=1
+            fi
+          done
+          exit $BAD
