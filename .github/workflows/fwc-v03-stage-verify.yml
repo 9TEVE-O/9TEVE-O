@@ -1,0 +1,27 @@
+name: FWC v0.3 stage verify
+
+on:
+  push:
+    branches:
+      - fwc-v03-live-gate-20260827
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reconstruct and hash only
+        run: |
+          set -euo pipefail
+          cat fwc_gate_stage2/server.*.b64 | base64 --ignore-garbage -d > /tmp/server.py
+          cat fwc_gate_stage2/html.*.b64 | base64 --ignore-garbage -d > /tmp/prototype.html
+          echo "GATE_SERVER_SHA256=$(sha256sum /tmp/server.py | cut -d' ' -f1)"
+          echo "GATE_HTML_SHA256=$(sha256sum /tmp/prototype.html | cut -d' ' -f1)"
+          echo "GATE_SERVER_BYTES=$(wc -c < /tmp/server.py)"
+          echo "GATE_HTML_BYTES=$(wc -c < /tmp/prototype.html)"
+          test "$(sha256sum /tmp/server.py | cut -d' ' -f1)" = "1bed2be3a81ffe26ebc1f23d35ed46432d673cb7b2fffdfbcc7ec6dbd2f1ff6a"
+          test "$(sha256sum /tmp/prototype.html | cut -d' ' -f1)" = "f9c7c1caafc92b6d08d0611d6afcee1e5a5308f1777cfa8ec75dc95e900bdf56"
+          echo GATE_SOURCE_BYTES=VERIFIED_UNCHANGED
