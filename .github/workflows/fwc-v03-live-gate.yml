@@ -1,0 +1,149 @@
+name: FWC v0.3 live retrieval gate
+
+on:
+  push:
+    branches:
+      - fwc-v03-live-gate-20260827
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout isolated gate branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install bounded test dependencies
+        run: |
+          python -m pip install --disable-pip-version-check pypdf==5.9.0 playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Reconstruct and verify unchanged v0.3 artefacts
+        run: |
+          set -euo pipefail
+          cat fwc_gate_stage2/server.*.b64 | base64 -d > fwc_retrieval_server_v0_3.py
+          cat fwc_gate_stage2/html.*.b64 | base64 -d > FWC_case_authority_verification_prototype_v0_3.html
+          SERVER_SHA=$(sha256sum fwc_retrieval_server_v0_3.py | cut -d' ' -f1)
+          HTML_SHA=$(sha256sum FWC_case_authority_verification_prototype_v0_3.html | cut -d' ' -f1)
+          echo "GATE_COMMIT_SHA=$GITHUB_SHA"
+          echo "GATE_SERVER_SHA256=$SERVER_SHA"
+          echo "GATE_HTML_SHA256=$HTML_SHA"
+          test "$SERVER_SHA" = "1bed2be3a81ffe26ebc1f23d35ed46432d673cb7b2fffdfbcc7ec6dbd2f1ff6a"
+          test "$HTML_SHA" = "f9c7c1caafc92b6d08d0611d6afcee1e5a5308f1777cfa8ec75dc95e900bdf56"
+          echo "GATE_SOURCE_BYTES=VERIFIED_UNCHANGED"
+
+      - name: Run one live end-to-end practitioner-interface path
+        run: |
+          set -euo pipefail
+          python -u fwc_retrieval_server_v0_3.py > server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'cat server.log || true; kill "$SERVER_PID" 2>/dev/null || true' EXIT
+
+          python - <<'PY'
+          import time, urllib.request
+          for _ in range(40):
+              try:
+                  with urllib.request.urlopen('http://127.0.0.1:8765/health', timeout=1) as r:
+                      if r.status == 200:
+                          print('GATE_LOCAL_HEALTH=200')
+                          break
+              except Exception:
+                  time.sleep(0.25)
+          else:
+              raise SystemExit('Local v0.3 server did not become healthy')
+          PY
+
+          cat > /tmp/fwc_gate_browser.py <<'PY'
+          import json
+          from playwright.sync_api import sync_playwright
+
+          expected_url = 'https://www.fwc.gov.au/documents/decisionssigned/pdf/2025fwcfb41.pdf'
+          expected_citation = 'Prateek Patial v Kailash Lawyers Pty Ltd [2025] FWCFB 41'
+
+          with sync_playwright() as p:
+              browser = p.chromium.launch(headless=True)
+              page = browser.new_page()
+              page.goto('http://127.0.0.1:8765', wait_until='networkidle')
+              initial = page.locator('#app').inner_text()
+              print('GATE_INITIAL_INTERFACE_BEGIN')
+              print(initial)
+              print('GATE_INITIAL_INTERFACE_END')
+              assert 'Review required' in initial
+              assert expected_citation in initial
+
+              with page.expect_response(lambda r: r.url.endswith('/api/retrieve') and r.request.method == 'POST', timeout=30000) as info:
+                  page.get_by_role('button', name='Review citation').click()
+              response = info.value
+              payload = response.json()
+              page.wait_for_timeout(250)
+              evidence_ui = page.locator('#app').inner_text()
+
+              print(f'GATE_API_HTTP_STATUS={response.status}')
+              print('GATE_PAYLOAD_JSON=' + json.dumps(payload, ensure_ascii=False, sort_keys=True))
+              print('GATE_EVIDENCE_INTERFACE_BEGIN')
+              print(evidence_ui)
+              print('GATE_EVIDENCE_INTERFACE_END')
+
+              assert response.status == 200
+              assert payload.get('retrieval_status') == 'SOURCE_RETRIEVED', payload
+              assert payload.get('verification_status') == 'PRACTITIONER_VERIFICATION_REQUIRED', payload
+              assert payload.get('source_url') == expected_url, payload
+              assert payload.get('input_citation') == expected_citation, payload
+              assert payload.get('retrieved_pinpoint') == '[13]', payload
+              assert payload.get('retrieved_text'), payload
+              assert payload.get('source_authority') == 'Fair Work Commission', payload
+              assert payload.get('neutral_citation') == '[2025] FWCFB 41', payload
+              assert payload.get('matter_number') == 'C2024/9258', payload
+              assert payload.get('decision_date') == '20 February 2025', payload
+              assert 'AUTHORITATIVE SOURCE RETRIEVED' in evidence_ui
+              assert 'PRACTITIONER_VERIFICATION_REQUIRED' in evidence_ui
+
+              page.get_by_role('button', name='Open retrieved evidence').click()
+              source_ui = page.locator('#app').inner_text()
+              print('GATE_SOURCE_INTERFACE_BEGIN')
+              print(source_ui)
+              print('GATE_SOURCE_INTERFACE_END')
+
+              assert 'Retrieved source evidence' in source_ui
+              assert 'AUTHORITATIVE SOURCE RETRIEVED' in source_ui
+              assert 'PRACTITIONER VERIFICATION REQUIRED' in source_ui
+              assert expected_url in source_ui
+              assert '[13]' in source_ui
+              assert payload['retrieved_text'] in source_ui
+              assert 'C2024/9258' in source_ui
+              assert '20 February 2025' in source_ui
+
+              provenance = {
+                  'source_authority': payload['source_authority'],
+                  'source_type': payload['source_type'],
+                  'source_title': payload['source_title'],
+                  'neutral_citation': payload['neutral_citation'],
+                  'source_url': payload['source_url'],
+                  'retrieval_timestamp': payload['retrieval_timestamp'],
+                  'matter_number': payload['matter_number'],
+                  'decision_date': payload['decision_date'],
+              }
+              print('GATE_PROVENANCE_RECORD=' + json.dumps(provenance, ensure_ascii=False, sort_keys=True))
+              print('GATE_SOURCE_VALIDATION=PASSED_BY_SOURCE_RETRIEVED_CODE_PATH')
+              print('GATE_EVIDENCE_CONTRACT=PASSED_EXISTING_INTERFACE_VALIDATOR')
+              print('GATE_INTERFACE_INTEGRATION=PASSED')
+              print('GATE_RESULT=PASS')
+              browser.close()
+          PY
+
+          python /tmp/fwc_gate_browser.py
+
+      - name: Emit server log
+        if: always()
+        run: |
+          echo GATE_SERVER_LOG_BEGIN
+          cat server.log 2>/dev/null || true
+          echo GATE_SERVER_LOG_END
