@@ -54,12 +54,9 @@ I build systems that think, automate, and scale. My work sits at the intersectio
 
 | Project | Description |
 |---------|-------------|
-| [**🔍 AI-Policy-Terms-Analyzer**](https://github.com/9TEVE-O/AI-Policy-Terms-Analyzer) | Parses and analyses AI service Terms of Service and privacy policies — surfacing data rights, risks, and gotchas so you don't have to read the fine print. |
-| [**🕷️ SpiderID_APP**](https://github.com/9TEVE-O/SpiderID_APP) | Computer vision app for spider identification — combining image classification with a clean mobile-first UX. |
-| [**🧠 DeepResearch**](https://github.com/9TEVE-O/DeepResearch) | Leading open-source deep research agent (Tongyi). Orchestrates multi-step reasoning and retrieval to produce comprehensive, cited research outputs. |
-| [**🎬 Waver**](https://github.com/9TEVE-O/Waver) | Unified Text-to-Video and Image-to-Video generation using industry-level video foundation models. |
-| [**🎭 personaplex**](https://github.com/9TEVE-O/personaplex) | Dynamic persona management and composition for AI agents and conversational systems. |
-| [**🤖 clawdbot-formal-models**](https://github.com/9TEVE-O/clawdbot-formal-models) | Formal behavioural models for ClawdBot — bringing rigour and verifiability to conversational AI system design. |
+| [**🛡️ ASPRON**](https://github.com/9TEVE-O/ASPRON-) | Browser-based Safe Intake Capsule: risky fields are identified, raw access is blocked, a human approves a redacted copy, and reduced evidence is retained. |
+| [**🔍 AI-Policy-Terms-Analyzer**](https://github.com/9TEVE-O/AI-Policy-Terms-Analyzer) | Python tooling that extracts technical and operational signals from public policies, terms, and privacy pages for human review and structured output. |
+| [**👪 KinSync**](https://github.com/9TEVE-O/KinSync) | Full-stack family-coordination application scaffold with separated web, API, auth, billing, database, and email concerns. |
 
 ---
 
