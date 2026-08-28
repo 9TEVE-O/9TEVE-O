@@ -1,68 +1,31 @@
-<div align="center">
-
 # Steven Lees
 
-**AI workflow consultant, builder, and writer**
+**Applied AI systems builder | Evidence-bound workflow controls**
 
-I work on practical AI systems for teams that need clearer documents, safer automation, and evidence-bound workflows.
+I build and test small AI systems for work where a convincing answer is not enough. The focus is clear inputs, limited authority, repeatable checks, and evidence a human can inspect.
 
-</div>
+## Public work
 
-## Focus
-
-- AI-assisted development and multi-agent workflow design
-- Retrieval-augmented AI, document intelligence, and source-grounded outputs
-- Responsible AI, review gates, audit trails, observability, and reproducibility
-- Consulting assets, technical writing, and practical build notes
-
-## Operating principle
-
-> Agentic tools increase output. Skill, scope, architecture, review, and closure decide what survives.
-
-## Current direction
-
-I am building a consulting and development practice around practical AI systems, document workflows, and evidence-bound automation.
-
-The work here is a mix of:
-
-- working prototypes
-- research notes
-- workflow patterns
-- developer experiments
-- public writing support material
-
-Not every repository is production-ready. I separate experiments, references, and approved artefacts deliberately.
-
-## Featured build lanes
-
-| Lane | What it shows |
+| Repository | What it demonstrates |
 | --- | --- |
-| KinSync | Product thinking, app structure, and user-centred workflow design |
-| Able to Answer | Document intelligence, question answering, retrieval, citations, and auditability |
-| Able to Analyze | Review, analysis, and structured interpretation workflows |
-| Research Repo | Source-bound research intake and pattern extraction |
-| Humanizer | Editing, rewriting, and tone transformation workflows |
-| TrainKit | Training material, reusable templates, and skill-building systems |
+| [ASPRON](https://github.com/9TEVE-O/ASPRON-) | A browser-based Safe Intake Capsule: risky fields are identified, raw access is blocked, a human approves a redacted copy, and reduced evidence is retained. |
+| [AI Policy & Terms Analyzer](https://github.com/9TEVE-O/AI-Policy-Terms-Analyzer) | Python tooling that extracts technical and operational signals from public policies, terms, and privacy pages for human review and structured output. |
+| [KinSync](https://github.com/9TEVE-O/KinSync) | A full-stack family-coordination application scaffold with separated web, API, auth, billing, database, and email concerns. |
 
-## How I build
+## How I work
 
-- Start from the document, source, or workflow, not from the model.
-- Keep human review in the loop where authority or risk matters.
-- Treat summaries as working material, not evidence.
-- Use version control, issue notes, review prompts, and closure notes to avoid drift.
-- Prefer small, testable systems over inflated automation claims.
+- Establish what the available evidence supports, then state what remains unknown.
+- Keep model output, policy, verification, and human authority distinct.
+- Build the smallest testable system that can prove or disprove a claim.
+- Treat documentation, tests, and reproducible runs as part of the deliverable.
+- Keep prototypes honest about their boundaries and production status.
 
-## Looking for
+## Current focus
 
-- AI workflow and document intelligence consulting conversations
-- Build partnerships around safe intake, RAG, review systems, and workflow automation
-- Public writing and community contribution around evidence-bound AI work
+- Safe AI intake, policy gates, and reduced evidence receipts
+- AI workflow evaluation, human review, and control design
+- Source-grounded document analysis and practical full-stack systems
 
-## Contact
+## Profile rule
 
-- GitHub: @9TEVE-O
-- Name: Steven Lees
-
-## Private prototypes
-
-- [AI Workflow Evidence Auditor](docs/evidence-auditor.md) — a tool-only Responses API prototype for evidence-bound workflow review.
+> A useful AI system should show what it used, what it did, what it could not establish, and who remains authorised to decide.
