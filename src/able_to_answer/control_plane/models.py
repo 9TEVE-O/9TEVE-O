@@ -153,6 +153,7 @@ class DispatchTaskRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_envelope_source(self) -> "DispatchTaskRequest":
+        """Require either a full envelope or the shorthand dispatch fields."""
         if self.envelope is not None:
             if self.actor is not None or self.action_type is not None:
                 raise ValueError("Provide either envelope or shorthand fields, not both")

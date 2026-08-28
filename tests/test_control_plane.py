@@ -35,6 +35,7 @@ def client(tmp_path):
 # ─────────────────────────────────────────────────────────
 
 def _create_run(client, *, goal="Implement feature X", tenant_id="tenant_1", policy_profile_id="default"):
+    """Create a run through the API with stable default test data."""
     return client.post(
         "/v1/runs",
         json={"tenant_id": tenant_id, "goal": goal, "policy_profile_id": policy_profile_id},
@@ -42,6 +43,7 @@ def _create_run(client, *, goal="Implement feature X", tenant_id="tenant_1", pol
 
 
 def _create_task(client, run_id, *, task_type="code", agent_role="coder"):
+    """Create a task for the supplied run through the API."""
     return client.post(
         f"/v1/runs/{run_id}/tasks",
         json={"type": task_type, "agent_role": agent_role},
@@ -49,6 +51,7 @@ def _create_task(client, run_id, *, task_type="code", agent_role="coder"):
 
 
 def _dispatch(client, task_id, *, action_type="GIT_COMMIT"):
+    """Dispatch a task using the shorthand actor and action-type request shape."""
     return client.post(
         f"/v1/tasks/{task_id}/dispatch",
         json={
@@ -68,6 +71,7 @@ def _dispatch_envelope(
     policy_profile_id="default",
     envelope_task_id=None,
 ):
+    """Dispatch a task using a fully populated action envelope."""
     return client.post(
         f"/v1/tasks/{task_id}/dispatch",
         json={
@@ -84,10 +88,12 @@ def _dispatch_envelope(
 
 
 def _task_status(task_id):
+    """Return the current persisted status for a task."""
     return cp_router_module.cp_store.get_task(task_id=task_id)["status"]
 
 
 def _policy_decisions():
+    """Return recorded policy decisions in creation order."""
     with cp_router_module.cp_store._connect() as con:
         return con.execute("SELECT * FROM cp_policy_decisions ORDER BY created_at").fetchall()
 
@@ -389,7 +395,6 @@ def test_approve_run_requires_authenticated_identity(client):
         f"/v1/runs/{run_id}/approve",
         json=_approval_request(task_id, decision_id),
     )
-
     assert resp.status_code == 401
     assert resp.json()["detail"] == "authenticated_principal_required"
 
@@ -1145,4 +1150,3 @@ def test_store_create_artifact_idempotent(tmp_path):
     a1 = store.create_artifact(run_id=run_id, artifact_type="audit_pack", content=content)
     a2 = store.create_artifact(run_id=run_id, artifact_type="audit_pack", content=content)
     assert a1 == a2  # same content → same id (INSERT OR IGNORE)
-
