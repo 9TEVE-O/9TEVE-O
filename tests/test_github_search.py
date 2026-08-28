@@ -11,7 +11,6 @@ from able_to_answer.api.main import app
 from able_to_answer.github_search.client import score_skill_alignment
 from able_to_answer.github_search.router import _parse_topic_list
 
-
 # ────────────────────────────────────────────────────────────
 # Helpers
 # ────────────────────────────────────────────────────────────

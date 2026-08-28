@@ -4,8 +4,8 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from able_to_answer.core.storage import SqliteStore
 from able_to_answer.api.main import app
+from able_to_answer.core.storage import SqliteStore
 
 
 @pytest.fixture()
@@ -25,6 +25,27 @@ def test_health(client):
     resp = client.get("/health")
     assert resp.status_code == 200
     assert resp.json() == {"status": "ok"}
+
+
+def test_health_response_includes_generated_traceparent_header(client):
+    """The telemetry middleware sets a traceparent header on every response,
+    generating one when the request doesn't supply one."""
+    resp = client.get("/health")
+    assert resp.status_code == 200
+    traceparent = resp.headers["traceparent"]
+    parts = traceparent.split("-")
+    assert len(parts) == 4
+    assert parts[0] == "00"
+    assert len(parts[1]) == 32
+    assert len(parts[2]) == 16
+
+
+def test_health_response_echoes_inbound_traceparent_header(client):
+    """An inbound traceparent header is parsed and echoed back unchanged."""
+    inbound = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    resp = client.get("/health", headers={"traceparent": inbound})
+    assert resp.status_code == 200
+    assert resp.headers["traceparent"] == inbound
 
 
 def test_ingest_text(client):

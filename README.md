@@ -1,65 +1,31 @@
-<div align="center">
+# Steven Lees
 
-# Subzteveø 🙃
+**Applied AI systems builder | Evidence-bound workflow controls**
 
-### These pretzels are making me thirsty
+I build and test small AI systems for work where a convincing answer is not enough. The focus is clear inputs, limited authority, repeatable checks, and evidence a human can inspect.
 
-<p>
-Hi. Someone left the door open. Father of two boys, I wanted to know [WTF] what the future holds for the kids with all the AI bizzo. Ended up here. Broke some shiny stuff. Spoke to a robot (actually spoke to a dozen). Made some plastic stuff for out there. Met some cool people in here.
-</p>
+## Public work
 
-</div>
+| Repository | What it demonstrates |
+| --- | --- |
+| [ASPRON](https://github.com/9TEVE-O/ASPRON-) | A browser-based Safe Intake Capsule: risky fields are identified, raw access is blocked, a human approves a redacted copy, and reduced evidence is retained. |
+| [AI Policy & Terms Analyzer](https://github.com/9TEVE-O/AI-Policy-Terms-Analyzer) | Python tooling that extracts technical and operational signals from public policies, terms, and privacy pages for human review and structured output. |
+| [KinSync](https://github.com/9TEVE-O/KinSync) | A full-stack family-coordination application scaffold with separated web, API, auth, billing, database, and email concerns. |
 
-## able-to-answer local setup
+## How I work
 
-This repository contains a single FastAPI service backed by SQLite. It does not require a separate frontend, database server, or Node.js development server.
+- Establish what the available evidence supports, then state what remains unknown.
+- Keep model output, policy, verification, and human authority distinct.
+- Build the smallest testable system that can prove or disprove a claim.
+- Treat documentation, tests, and reproducible runs as part of the deliverable.
+- Keep prototypes honest about their boundaries and production status.
 
-### 1. Configure environment
+## Current focus
 
-Copy the example environment file and adjust values only if needed:
+- Safe AI intake, policy gates, and reduced evidence receipts
+- AI workflow evaluation, human review, and control design
+- Source-grounded document analysis and practical full-stack systems
 
-```bash
-cp .env.example .env
-```
+## Profile rule
 
-The defaults are safe for local development. Do not commit real secrets or local `.env` files.
-
-### 2. Install dependencies
-
-Install the package and development dependencies into Python 3:
-
-```bash
-python3 -m pip install -e ".[dev]" --break-system-packages
-```
-
-### 3. Start the API
-
-Run the FastAPI service with Python 3:
-
-```bash
-python3 -m able_to_answer --host 0.0.0.0 --port 8000
-```
-
-For autoreload during development, add `--reload`.
-
-The health check is available at:
-
-```text
-GET http://localhost:8000/health
-```
-
-Expected response:
-
-```json
-{"status":"ok"}
-```
-
-### 4. Run tests
-
-```bash
-python3 -m pytest tests/ -v
-```
-
-## Deployment notes
-
-Set production environment variables in the target hosting platform rather than committing them to the repository. At minimum, configure `ATA_DB_PATH` to an appropriate persistent SQLite path for the deployment environment.
+> A useful AI system should show what it used, what it did, what it could not establish, and who remains authorised to decide.

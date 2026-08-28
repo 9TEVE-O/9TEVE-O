@@ -1,0 +1,47 @@
+{
+  "workflow_id": "wf-vendor-risk-001",
+  "workflow_name": "AI-assisted vendor renewal recommendation",
+  "workflow_text": "The assistant recommends automatically renewing Acme Analytics for 12 months. It states that Acme meets all security requirements, has no unresolved incidents, remains within budget, and uses standard terms. Procurement should issue the purchase order without further review.",
+  "controlled_evidence_set": [
+    {
+      "evidence_id": "E-001",
+      "title": "Vendor renewal ticket",
+      "evidence_type": "ticket",
+      "authority_level": "primary",
+      "source_reference": "PROC-4421",
+      "date": "2026-02-10",
+      "excerpt_or_summary": "A 12-month renewal was requested. Pricing appears similar to last year, but the final quote is not attached.",
+      "known_limitations": "No security review, legal review, final quote, or complete incident history is attached."
+    },
+    {
+      "evidence_id": "E-002",
+      "title": "Information security review policy",
+      "evidence_type": "policy",
+      "authority_level": "primary",
+      "source_reference": "SEC-POL-12",
+      "date": "2025-11-01",
+      "excerpt_or_summary": "Vendors processing customer data require annual security review before renewal. Exceptions require written Security Governance approval.",
+      "known_limitations": null
+    },
+    {
+      "evidence_id": "E-003",
+      "title": "Incident export",
+      "evidence_type": "log",
+      "authority_level": "primary",
+      "source_reference": "INC-EXPORT-2026-02-09",
+      "date": "2026-02-09",
+      "excerpt_or_summary": "No Sev-1 incidents were linked to Acme Analytics in the last 12 months.",
+      "known_limitations": "The export excludes lower severities, privacy issues, and open vendor issues."
+    }
+  ],
+  "review_context": {
+    "requester": "Procurement Operations",
+    "domain": "Vendor governance",
+    "decision_to_support": "Whether the recommendation is evidence-ready for approval",
+    "applicable_policies": ["SEC-POL-12"],
+    "known_constraints": [
+      "Use only the controlled evidence set.",
+      "Do not query external vendor systems."
+    ]
+  }
+}

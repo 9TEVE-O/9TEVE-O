@@ -13,5 +13,39 @@ class Settings:
     max_answer_chars: int = int(os.getenv("ATA_MAX_ANSWER_CHARS", "1800"))
     github_token: str | None = os.getenv("ATA_GITHUB_TOKEN")
 
+    def __post_init__(self) -> None:
+        if self.chunk_size_chars <= 0:
+            raise ValueError(
+                "chunk_size_chars (ATA_CHUNK_SIZE_CHARS) must be greater "
+                f"than 0, got {self.chunk_size_chars}."
+            )
+
+        if self.chunk_overlap_chars < 0:
+            raise ValueError(
+                "chunk_overlap_chars (ATA_CHUNK_OVERLAP_CHARS) must be "
+                "greater than or equal to 0, got "
+                f"{self.chunk_overlap_chars}."
+            )
+
+        if self.chunk_overlap_chars >= self.chunk_size_chars:
+            raise ValueError(
+                "chunk_overlap_chars (ATA_CHUNK_OVERLAP_CHARS) must be "
+                "less than chunk_size_chars (ATA_CHUNK_SIZE_CHARS), got "
+                f"{self.chunk_overlap_chars} and got {self.chunk_size_chars}, "
+                "to avoid an infinite loop."
+            )
+
+        if self.max_context_chunks <= 0:
+            raise ValueError(
+                "max_context_chunks (ATA_MAX_CONTEXT_CHUNKS) must be "
+                f"greater than 0, got {self.max_context_chunks}."
+            )
+
+        if self.max_answer_chars <= 0:
+            raise ValueError(
+                "max_answer_chars (ATA_MAX_ANSWER_CHARS) must be "
+                f"greater than 0, got {self.max_answer_chars}."
+            )
+
 
 settings = Settings()

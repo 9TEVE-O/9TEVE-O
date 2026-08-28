@@ -183,6 +183,9 @@ def test_build_audit_pack_empty_citations():
 
 
 # ────────────────────────────────────────────────────────────
+# Settings validation
+# ────────────────────────────────────────────────────────────
+
 # Audit — self_modelling_pressure
 # ────────────────────────────────────────────────────────────
 
@@ -252,6 +255,7 @@ def test_self_modelling_pressure_review_threshold_boundaries():
 # Settings validation
 # ────────────────────────────────────────────────────────────
 
+
 def test_settings_valid_defaults():
     s = Settings(
         db_path="test.sqlite3",
@@ -298,7 +302,7 @@ def test_settings_zero_chunk_size_raises():
 
 
 def test_settings_negative_overlap_raises():
-    with pytest.raises(ValueError, match="ATA_CHUNK_OVERLAP_CHARS"):
+    with pytest.raises(ValueError, match=r"ATA_CHUNK_OVERLAP_CHARS.*got -1"):
         Settings(
             db_path="x.sqlite3",
             chunk_size_chars=1200,
@@ -309,7 +313,7 @@ def test_settings_negative_overlap_raises():
 
 
 def test_settings_zero_max_context_chunks_raises():
-    with pytest.raises(ValueError, match="ATA_MAX_CONTEXT_CHUNKS"):
+    with pytest.raises(ValueError, match=r"ATA_MAX_CONTEXT_CHUNKS.*got 0"):
         Settings(
             db_path="x.sqlite3",
             chunk_size_chars=1200,
@@ -320,7 +324,7 @@ def test_settings_zero_max_context_chunks_raises():
 
 
 def test_settings_zero_max_answer_chars_raises():
-    with pytest.raises(ValueError, match="ATA_MAX_ANSWER_CHARS"):
+    with pytest.raises(ValueError, match=r"ATA_MAX_ANSWER_CHARS.*got 0"):
         Settings(
             db_path="x.sqlite3",
             chunk_size_chars=1200,
@@ -400,45 +404,39 @@ def test_settings_overlap_error_message_mentions_infinite_loop():
         )
 
 
-def test_settings_github_token_defaults_to_none():
-    """github_token should be None when not supplied and env var is unset."""
-    import os
-
-    orig = os.environ.pop("ATA_GITHUB_TOKEN", None)
-    try:
-        s = Settings(
-            db_path="x.sqlite3",
-            chunk_size_chars=1200,
-            chunk_overlap_chars=200,
-            max_context_chunks=6,
-            max_answer_chars=1800,
-        )
-        assert s.github_token is None
-    finally:
-        if orig is not None:
-            os.environ["ATA_GITHUB_TOKEN"] = orig
-
-
-def test_settings_all_fields_stored_correctly():
-    """All fields are accessible after construction with explicit values."""
+def test_settings_github_token_accepts_none():
+    """github_token=None is valid (no GitHub integration configured)."""
     s = Settings(
-        db_path="custom.sqlite3",
-        chunk_size_chars=800,
-        chunk_overlap_chars=100,
+        db_path="x.sqlite3",
+        chunk_size_chars=1200,
+        chunk_overlap_chars=200,
+        max_context_chunks=6,
+        max_answer_chars=1800,
+        github_token=None,
+    )
+    assert s.github_token is None
+
+
+def test_settings_all_fields_stored():
+    """All constructor arguments are accessible on the frozen dataclass."""
+    s = Settings(
+        db_path="mydb.sqlite3",
+        chunk_size_chars=600,
+        chunk_overlap_chars=50,
         max_context_chunks=3,
-        max_answer_chars=2000,
+        max_answer_chars=900,
         github_token="ghp_test",
     )
-    assert s.db_path == "custom.sqlite3"
-    assert s.chunk_size_chars == 800
-    assert s.chunk_overlap_chars == 100
+    assert s.db_path == "mydb.sqlite3"
+    assert s.chunk_size_chars == 600
+    assert s.chunk_overlap_chars == 50
     assert s.max_context_chunks == 3
-    assert s.max_answer_chars == 2000
+    assert s.max_answer_chars == 900
     assert s.github_token == "ghp_test"
 
 
-def test_settings_minimum_valid_chunk_size():
-    """chunk_size_chars=1 with overlap=0 is the smallest valid configuration."""
+def test_settings_minimum_valid_boundary_values():
+    """chunk_size=1, overlap=0, max_context=1, max_answer=1 are all minimum valid."""
     s = Settings(
         db_path="x.sqlite3",
         chunk_size_chars=1,
@@ -447,5 +445,146 @@ def test_settings_minimum_valid_chunk_size():
         max_answer_chars=1,
     )
     assert s.chunk_size_chars == 1
+    assert s.chunk_overlap_chars == 0
     assert s.max_context_chunks == 1
     assert s.max_answer_chars == 1
+
+
+def test_settings_chunk_size_checked_before_overlap():
+    """When both chunk_size_chars and chunk_overlap_chars are invalid, the
+    chunk_size_chars check (first in __post_init__) should raise, not the
+    overlap check."""
+    with pytest.raises(ValueError, match="ATA_CHUNK_SIZE_CHARS"):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=0,
+            chunk_overlap_chars=-1,
+            max_context_chunks=6,
+            max_answer_chars=1800,
+        )
+
+
+def test_settings_max_context_chunks_checked_before_max_answer_chars():
+    """When both max_context_chunks and max_answer_chars are invalid, the
+    max_context_chunks check (earlier in __post_init__) should raise first."""
+    with pytest.raises(ValueError, match="ATA_MAX_CONTEXT_CHUNKS"):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=1200,
+            chunk_overlap_chars=200,
+            max_context_chunks=0,
+            max_answer_chars=0,
+        )
+
+
+def test_settings_error_message_includes_offending_value():
+    """Error messages should embed the actual invalid value to aid debugging."""
+    with pytest.raises(ValueError, match=r"got -7"):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=-7,
+            chunk_overlap_chars=0,
+            max_context_chunks=6,
+            max_answer_chars=1800,
+        )
+
+
+def test_settings_overlap_error_message_includes_both_values():
+    """The overlap-vs-size error message should reference both offending values."""
+    with pytest.raises(ValueError, match=r"got 300.*got 200"):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=200,
+            chunk_overlap_chars=300,
+            max_context_chunks=6,
+            max_answer_chars=1800,
+        )
+
+
+# ────────────────────────────────────────────────────────────
+# Regression: exactly one __post_init__ implementation is active.
+#
+# Settings previously defined __post_init__ twice; the second definition
+# silently shadowed the first (last-defined-wins for duplicate method names
+# in a class body), so the terser messages (e.g. "ATA_CHUNK_SIZE_CHARS must
+# be > 0, got 0") were the ones actually raised at runtime even though the
+# more descriptive implementation was defined first. These tests pin the
+# exact message format of the single remaining implementation so a
+# reintroduced duplicate can't silently change validation error text again.
+# ────────────────────────────────────────────────────────────
+
+
+def test_settings_chunk_size_error_message_exact_format():
+    with pytest.raises(
+        ValueError,
+        match=r"^chunk_size_chars \(ATA_CHUNK_SIZE_CHARS\) must be greater "
+        r"than 0, got 0\.$",
+    ):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=0,
+            chunk_overlap_chars=0,
+            max_context_chunks=6,
+            max_answer_chars=1800,
+        )
+
+
+def test_settings_chunk_overlap_negative_error_message_exact_format():
+    with pytest.raises(
+        ValueError,
+        match=r"^chunk_overlap_chars \(ATA_CHUNK_OVERLAP_CHARS\) must be "
+        r"greater than or equal to 0, got -1\.$",
+    ):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=1200,
+            chunk_overlap_chars=-1,
+            max_context_chunks=6,
+            max_answer_chars=1800,
+        )
+
+
+def test_settings_overlap_size_error_message_exact_format():
+    with pytest.raises(
+        ValueError,
+        match=r"^chunk_overlap_chars \(ATA_CHUNK_OVERLAP_CHARS\) must be less "
+        r"than chunk_size_chars \(ATA_CHUNK_SIZE_CHARS\), got 500 and got "
+        r"500, to avoid an infinite loop\.$",
+    ):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=500,
+            chunk_overlap_chars=500,
+            max_context_chunks=6,
+            max_answer_chars=1800,
+        )
+
+
+def test_settings_max_context_chunks_error_message_exact_format():
+    with pytest.raises(
+        ValueError,
+        match=r"^max_context_chunks \(ATA_MAX_CONTEXT_CHUNKS\) must be "
+        r"greater than 0, got 0\.$",
+    ):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=1200,
+            chunk_overlap_chars=200,
+            max_context_chunks=0,
+            max_answer_chars=1800,
+        )
+
+
+def test_settings_max_answer_chars_error_message_exact_format():
+    with pytest.raises(
+        ValueError,
+        match=r"^max_answer_chars \(ATA_MAX_ANSWER_CHARS\) must be greater "
+        r"than 0, got -100\.$",
+    ):
+        Settings(
+            db_path="x.sqlite3",
+            chunk_size_chars=1200,
+            chunk_overlap_chars=200,
+            max_context_chunks=6,
+            max_answer_chars=-100,
+        )
