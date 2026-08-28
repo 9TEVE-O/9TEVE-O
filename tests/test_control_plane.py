@@ -397,7 +397,6 @@ def test_approve_run_requires_authenticated_identity(client):
     )
     assert resp.status_code == 401
     assert resp.json()["detail"] == "authenticated_principal_required"
-    assert resp.json()["detail"] == "authenticated_principal_required"
 
 
 def test_approve_run_rejects_mismatched_task(client):
