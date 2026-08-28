@@ -23,7 +23,7 @@ npm install
 cp .env.example .env
 ```
 
-Set `OPENAI_API_KEY`, `OPENAI_AUDITOR_PROMPT_ID`, and `OPENAI_AUDITOR_PROMPT_VERSION` in `.env`. `OPENAI_MODEL` is optional. Never commit `.env`.
+Set `OPENAI_API_KEY`, `OPENAI_AUDITOR_PROMPT_ID`, and `OPENAI_AUDITOR_PROMPT_VERSION` in `.env`. `OPENAI_AUDITOR_MODEL` is optional. Never commit `.env`.
 
 ## Test and type-check
 

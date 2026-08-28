@@ -17,7 +17,7 @@ const EnvironmentSchema = z.object({
     .string({ required_error: "OPENAI_AUDITOR_PROMPT_VERSION is required" })
     .trim()
     .regex(/^\d+$/, "OPENAI_AUDITOR_PROMPT_VERSION must be a numeric version"),
-  OPENAI_MODEL: z.string().trim().min(1).default("gpt-5.5"),
+  OPENAI_AUDITOR_MODEL: z.string().trim().min(1).default("gpt-5.5"),
 });
 
 export type AppEnvironment = z.infer<typeof EnvironmentSchema>;
