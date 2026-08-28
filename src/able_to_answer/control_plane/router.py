@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 import json
+import sqlite3
+import time
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Header, HTTPException
 
+from able_to_answer.control_plane.audit_pack import redact_value
 from able_to_answer.control_plane.models import (
     ActionEnvelope,
     ApproveRequest,
@@ -17,16 +20,20 @@ from able_to_answer.control_plane.models import (
     PolicyDecision,
     PolicyEvaluateRequest,
     PolicyEvaluateResponse,
-    RunResponse,
     RequestedAction,
+    RunResponse,
     RunStatus,
     TaskResponse,
     TaskStatus,
+    UpdateRunStatusRequest,
 )
 from able_to_answer.control_plane.policy import evaluate_action, get_policy_profile
-from able_to_answer.control_plane.storage import ControlPlaneStore
+from able_to_answer.control_plane.storage import (
+    ApprovalDispatchConflictError,
+    ControlPlaneStore,
+)
 from able_to_answer.core.config import settings
-from able_to_answer.core.logging import logger
+from able_to_answer.core.logging import get_trace_context, logger, trace_headers
 
 router = APIRouter(prefix="/v1", tags=["control-plane"])
 
@@ -52,7 +59,15 @@ def create_run(req: CreateRunRequest) -> dict:
         budget_tokens=req.budget.tokens,
         budget_time_s=req.budget.time_s,
     )
-    logger.info("control_plane: run_created run=%s tenant=%s", run_id, req.tenant_id)
+    logger.info(
+        "run_created",
+        data={
+            "run_id": run_id,
+            "project_id": req.project_id,
+            "policy_profile_id": req.policy_profile_id,
+        },
+        context={"tenant_id": req.tenant_id, "run_id": run_id},
+    )
     return {"run_id": run_id}
 
 
@@ -72,6 +87,23 @@ def get_run(run_id: str) -> RunResponse:
     )
 
 
+@router.patch("/runs/{run_id}/status", status_code=200)
+def update_run_status(run_id: str, req: UpdateRunStatusRequest) -> dict:
+    row = cp_store.get_run(run_id=run_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="run_not_found")
+    if row["status"] in _TERMINAL_STATUSES:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Run is already in terminal state: {row['status']}",
+        )
+    cp_store.update_run_status(run_id=run_id, status=req.status.value)
+    logger.info(
+        "control_plane: run_status_updated run=%s status=%s", run_id, req.status.value
+    )
+    return {"run_id": run_id, "status": req.status.value}
+
+
 @router.post("/runs/{run_id}/cancel", status_code=200)
 def cancel_run(run_id: str) -> dict:
     row = cp_store.get_run(run_id=run_id)
@@ -83,32 +115,119 @@ def cancel_run(run_id: str) -> dict:
             detail=f"Run is already in terminal state: {row['status']}",
         )
     cp_store.update_run_status(run_id=run_id, status="cancelled")
-    logger.info("control_plane: run_cancelled run=%s", run_id)
+    logger.info("run_cancelled", data={"run_id": run_id}, context={"run_id": run_id})
     return {"run_id": run_id, "status": "cancelled"}
 
 
-@router.post("/runs/{run_id}/approve", status_code=200)
-def approve_run(run_id: str, req: ApproveRequest) -> dict:
-    """Approve all tasks currently in *awaiting_approval* state for this run.
+@router.get(
+    "/tenants/{tenant_id}/runs/{run_id}/audit-pack",
+    response_model=ArtifactDetailResponse,
+)
+def get_run_audit_pack(tenant_id: str, run_id: str) -> ArtifactDetailResponse:
+    row = cp_store.get_run(run_id=run_id)
+    if not row or row["tenant_id"] != tenant_id:
+        raise HTTPException(status_code=404, detail="run_not_found")
+    if row["status"] not in _TERMINAL_STATUSES:
+        raise HTTPException(status_code=409, detail="run_not_terminal")
+    artifact = cp_store.get_final_audit_pack(run_id=run_id)
+    if not artifact:
+        raise HTTPException(status_code=404, detail="audit_pack_not_found")
+    return ArtifactDetailResponse(
+        artifact_id=artifact["id"],
+        run_id=artifact["run_id"],
+        type=artifact["type"],
+        content_hash=artifact["content_hash"],
+        created_at=artifact["created_at"],
+        content=json.loads(artifact["content_json"]),
+    )
 
-    ``req.approved_by`` should identify the human approver for the audit log.
+
+@router.post("/runs/{run_id}/approve", status_code=200)
+def approve_run(
+    run_id: str,
+    req: ApproveRequest,
+    principal_id: str | None = Header(default=None, alias="X-Principal-ID"),
+    principal_type: str | None = Header(default=None, alias="X-Principal-Type"),
+    trace_id: str | None = Header(default=None, alias="X-Trace-ID"),
+) -> dict:
     """
+    Persist a human approver's decision for a single pending policy decision and dispatch the associated task.
+
+    Returns:
+        result (dict): A payload containing:
+            - `approval_id`: the created approval's identifier
+            - `decision_id`: the policy decision identifier from the request
+            - `task_id`: the task identifier from the request
+            - `status`: the approval dispatch status, always `"dispatched"`
+    """
+    if not principal_id or not principal_type:
+        raise HTTPException(status_code=401, detail="authenticated_principal_required")
+    if principal_type != "human":
+        raise HTTPException(status_code=403, detail="human_approver_required")
+    approval_trace_id = trace_id or get_trace_context()["trace_id"]
+
     row = cp_store.get_run(run_id=run_id)
     if not row:
         raise HTTPException(status_code=404, detail="run_not_found")
 
-    tasks = cp_store.list_awaiting_approval_tasks(run_id=run_id)
-    for task in tasks:
-        cp_store.update_task_status(task_id=task["id"], status="dispatched")
+    task = cp_store.get_task(task_id=req.task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="task_not_found")
+    if task["run_id"] != run_id:
+        raise HTTPException(status_code=409, detail="approval_task_mismatch")
+    if cp_store.get_approval_for_decision(decision_id=req.decision_id):
+        raise HTTPException(status_code=409, detail="approval_already_recorded")
+    if task["status"] != "awaiting_approval":
+        raise HTTPException(status_code=409, detail="task_not_awaiting_approval")
 
-    approved_by = req.approved_by
+    decision = cp_store.get_policy_decision(decision_id=req.decision_id)
+    if (
+        not decision
+        or decision["run_id"] != run_id
+        or decision["task_id"] != req.task_id
+    ):
+        raise HTTPException(status_code=409, detail="approval_decision_mismatch")
+    if decision["decision"] != "pending_approval":
+        raise HTTPException(status_code=409, detail="decision_not_awaiting_approval")
+    if decision["action_type"] != req.action_type:
+        raise HTTPException(status_code=409, detail="approval_action_mismatch")
+    if req.expires_at <= int(time.time()):
+        raise HTTPException(status_code=409, detail="approval_expired")
+
+    try:
+        approval = cp_store.create_approval_and_dispatch(
+            run_id=run_id,
+            task_id=req.task_id,
+            action_type=req.action_type,
+            decision_id=req.decision_id,
+            approver_id=principal_id,
+            expires_at=req.expires_at,
+            note=req.note,
+            trace_id=approval_trace_id,
+        )
+    except sqlite3.IntegrityError as exc:
+        raise HTTPException(status_code=409, detail="approval_already_recorded") from exc
+    except ApprovalDispatchConflictError as exc:
+        raise HTTPException(status_code=409, detail="task_not_awaiting_approval") from exc
+
     logger.info(
-        "control_plane: run_approved run=%s approved_tasks=%d approved_by=%s",
-        run_id,
-        len(tasks),
-        approved_by,
+        "run_approved",
+        data={
+            "approval_id": approval.approval_id,
+            "decision_id": req.decision_id,
+            "approver_id": principal_id,
+            "principal_type": principal_type,
+            "trace_id": approval_trace_id,
+        },
+        context={"tenant_id": row["tenant_id"], "run_id": run_id, "task_id": req.task_id},
     )
-    return {"run_id": run_id, "approved_tasks": len(tasks)}
+    return {
+        "approval_id": approval.approval_id,
+        "decision_id": req.decision_id,
+        "task_id": req.task_id,
+        "status": "dispatched",
+        "trace_context": trace_headers(),
+    }
 
 
 # ─────────────────────────────────────────────────────────
@@ -176,10 +295,7 @@ def dispatch_task(task_id: str, req: DispatchTaskRequest) -> dict:
         envelope = req.envelope
     else:
         if req.actor is None or req.action_type is None:
-            raise HTTPException(
-                status_code=422,
-                detail="dispatch_request_missing_envelope_or_shorthand_fields",
-            )
+            raise HTTPException(status_code=400, detail="dispatch_shorthand_incomplete")
         envelope = ActionEnvelope(
             run_id=run["id"],
             task_id=task["id"],
@@ -198,13 +314,29 @@ def dispatch_task(task_id: str, req: DispatchTaskRequest) -> dict:
         if getattr(envelope, field) != stored_value:
             raise HTTPException(status_code=403, detail=f"dispatch_{field}_mismatch")
 
+    cp_store.create_artifact(
+        run_id=run["id"],
+        artifact_type="tool_invocation",
+        content=redact_value(
+            {
+                "task_id": task_id,
+                "actor": envelope.actor.model_dump(),
+                "requested_action": envelope.requested_action.model_dump(),
+                "data_tags": envelope.data_tags,
+                "budget": envelope.budget.model_dump(),
+            }
+        ),
+    )
+
     try:
         decision, reason = evaluate_action(envelope)
     except Exception:
         decision = PolicyDecision.deny
         reason = "Policy evaluation failed; defaulting to deny."
         logger.exception(
-            "control_plane: policy_evaluation_failed task=%s run=%s", task_id, run["id"]
+            "policy_denied",
+            data={"reason": reason, "failure_mode": "policy_evaluation_exception"},
+            context={"tenant_id": run["tenant_id"], "run_id": run["id"], "task_id": task_id},
         )
 
     cp_store.record_policy_decision(
@@ -215,7 +347,22 @@ def dispatch_task(task_id: str, req: DispatchTaskRequest) -> dict:
         reason=reason,
     )
 
+    logger.info(
+        "policy_decision",
+        data={
+            "action_type": envelope.requested_action.type,
+            "policy_decision": decision.value,
+            "reason": reason,
+        },
+        context={"tenant_id": run["tenant_id"], "run_id": run["id"], "task_id": task_id},
+    )
+
     if decision == PolicyDecision.deny:
+        logger.warning(
+            "policy_denied",
+            data={"action_type": envelope.requested_action.type, "reason": reason},
+            context={"tenant_id": run["tenant_id"], "run_id": run["id"], "task_id": task_id},
+        )
         raise HTTPException(
             status_code=403,
             detail={"policy_decision": decision.value, "reason": reason},
@@ -224,17 +371,20 @@ def dispatch_task(task_id: str, req: DispatchTaskRequest) -> dict:
     status = "dispatched" if decision == PolicyDecision.allow else "awaiting_approval"
     cp_store.update_task_status(task_id=task_id, status=status)
     logger.info(
-        "control_plane: task_dispatch_evaluated task=%s run=%s decision=%s status=%s",
-        task_id,
-        run["id"],
-        decision.value,
-        status,
+        "task_dispatched",
+        data={
+            "action_type": envelope.requested_action.type,
+            "policy_decision": decision.value,
+            "status": status,
+        },
+        context={"tenant_id": run["tenant_id"], "run_id": run["id"], "task_id": task_id},
     )
     return {
         "task_id": task_id,
         "status": status,
         "policy_decision": decision.value,
         "reason": reason,
+        "trace_context": trace_headers(),
     }
 
 
@@ -254,7 +404,11 @@ def complete_task(task_id: str, req: CompleteTaskRequest) -> dict:
         status=req.status.value,
         outputs=req.outputs,
     )
-    logger.info("control_plane: task_completed task=%s status=%s", task_id, req.status.value)
+    logger.info(
+        "task_completed",
+        data={"status": req.status.value, "output_keys": sorted(req.outputs.keys())},
+        context={"run_id": task["run_id"], "task_id": task_id},
+    )
     return {"task_id": task_id, "status": req.status.value}
 
 

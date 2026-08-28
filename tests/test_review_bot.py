@@ -5,14 +5,13 @@ calls are made and no GitHub token is required.
 """
 from __future__ import annotations
 
-import sys
 import os
+import sys
 
 # Make the scripts/ directory importable without installing it as a package.
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
 import gh_review_bot as bot  # noqa: E402
-
 
 # ─────────────────────────────────────────────────────────
 # classify_files
@@ -252,7 +251,7 @@ def test_decide_action_approve_docs_only_all_success():
     assert action == "approve"
 
 
-def test_decide_action_approve_no_checks_safe_paths():
+def test_decide_action_ci_pending_when_no_checks_safe_paths():
     """Empty check list means CI hasn't started yet — defers to ci_pending."""
     action = bot.decide_action(
         is_draft=False,

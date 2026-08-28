@@ -1,0 +1,10 @@
+[
+  {
+    "id": "repo-builder",
+    "role": "AI and automation project builder",
+    "organization": "Independent portfolio work",
+    "period": "Not evidenced in the current portfolio data.",
+    "summary": "Built and maintained repository-backed AI, governance, and review automation artifacts using local code, tests, and documentation as evidence.",
+    "projectIds": ["able-to-answer", "review-automation"]
+  }
+]

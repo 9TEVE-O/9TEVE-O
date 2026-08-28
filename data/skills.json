@@ -1,0 +1,6 @@
+[
+  { "name": "Evidence-grounded AI responses", "category": "AI Product", "evidenceProjectIds": ["able-to-answer"] },
+  { "name": "FastAPI services", "category": "Backend", "evidenceProjectIds": ["able-to-answer"] },
+  { "name": "Governance automation", "category": "Automation", "evidenceProjectIds": ["review-automation", "able-to-answer"] },
+  { "name": "Test-driven validation", "category": "Engineering", "evidenceProjectIds": ["review-automation", "able-to-answer"] }
+]

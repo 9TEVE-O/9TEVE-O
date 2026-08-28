@@ -6,7 +6,6 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
-
 # ─────────────────────────────────────────────────────────
 # Enumerations
 # ─────────────────────────────────────────────────────────
@@ -120,6 +119,10 @@ class RunResponse(BaseModel):
     created_at: int
 
 
+class UpdateRunStatusRequest(BaseModel):
+    status: RunStatus = Field(..., description="New run status")
+
+
 # ─────────────────────────────────────────────────────────
 # Tasks
 # ─────────────────────────────────────────────────────────
@@ -150,11 +153,10 @@ class DispatchTaskRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_envelope_source(self) -> "DispatchTaskRequest":
+        """Require either a full envelope or the shorthand dispatch fields."""
         if self.envelope is not None:
             if self.actor is not None or self.action_type is not None:
                 raise ValueError("Provide either envelope or shorthand fields, not both")
-            if self.inputs:
-                raise ValueError("Inputs cannot be provided when envelope is present")
         elif self.actor is None or self.action_type is None:
             raise ValueError("Provide envelope or both actor and action_type")
         return self
@@ -212,5 +214,8 @@ class PolicyEvaluateResponse(BaseModel):
 # ─────────────────────────────────────────────────────────
 
 class ApproveRequest(BaseModel):
-    approved_by: str | None = Field(default=None, description="Identity of the approver")
+    task_id: str = Field(..., description="Single gated task to approve")
+    decision_id: str = Field(..., description="Pending policy decision authorizing the task")
+    action_type: str = Field(..., description="Gated action authorized by the approval")
+    expires_at: int = Field(..., description="Unix timestamp after which approval is invalid")
     note: str | None = Field(default=None, description="Optional approval note")
