@@ -71,26 +71,6 @@ I build systems that think, automate, and scale. My work sits at the intersectio
 
 ---
 
-## ⚙️ Setup & Stack Status
-
-My full personal infrastructure — GitHub profile, MCP servers, Google Drive sync, Slack integration, and automation pipelines — is tracked in:
-
-**[→ SETUP_PLAN.md](./SETUP_PLAN.md)**
-
-| Layer | Status |
-|-------|--------|
-| GitHub Profile (README, stats, projects) | 🔄 In Progress |
-| MCP Servers (ruflo + Claude Code) | ✅ Done |
-| Google Drive sync + OAuth2 | ✅ Done |
-| Slack integration (Drive → Slack via n8n) | ✅ Done |
-| Automation stack (n8n workflows, webhooks) | ✅ Done |
-| Phone apps (GitHub Mobile, Slack) | 📋 Planned |
-| Additional MCP servers | 📋 Planned |
-
-> ✅ Done · 🔄 In Progress · 📋 Planned
-
----
-
 ## 🤝 Let's Connect & Collaborate
 
 I'm always open to collaborating on projects that push the boundaries of AI, automation, and intelligent systems. Whether it's a new idea, an open-source contribution, or just a conversation — reach out.
