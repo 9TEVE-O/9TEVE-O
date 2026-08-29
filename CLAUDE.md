@@ -1,6 +1,6 @@
 # CLAUDE.md — 9TEVE-O super-repo
 
-This repository (`9teve-o/9teve-o`) is a **polyglot governance-and-AI monorepo**. It began as
+This repository (`9TEVE-O/9TEVE-O`) is a **polyglot governance-and-AI monorepo**. It began as
 the `able-to-answer` FastAPI MVP and has since grown into several loosely-coupled subsystems that
 share a governance theme: *ingest → retrieve → answer → audit*, agent orchestration under policy,
 and evidence-first tooling. It doubles as the owner's GitHub **profile repo** (`README.md` renders
