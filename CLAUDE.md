@@ -74,7 +74,7 @@ cd ai-workflow-evidence-auditor && npm install && cp .env.example .env
 | Lint | `npm run lint` |
 | Type-check | `npm run typecheck` |
 | Tests (vitest) | `npm test` (watch: `npm run test:watch`) |
-| Evidence audit CLI | `npm run audit:evidence` |
+| Evidence audit CLI | `npm run audit:evidence -- fixtures/evidence-auditor/eval-001.input.json` (an input JSON path is required) |
 
 ### ai-workflow-evidence-auditor (from its own directory)
 | Task | Command |
@@ -209,7 +209,7 @@ Examples:
 - Use `tmp_path` for any test touching the filesystem
 - Tests must not make network calls (the auditor's `eval:live` is opt-in and excluded from the default suite)
 - Do not mock `SqliteStore` internals — use a real `tmp_path`-backed SQLite
-- Node subsystems: keep changes green under `npm test` (vitest) and `npm run typecheck`
+- Node subsystems: keep changes green under `npm test` (vitest). Type-check the **portfolio app** with `npm run typecheck`; the **standalone auditor** has no `typecheck` script — type-check it with `npm run build` (`tsc --noEmit`) from its own directory
 
 ## Security rules
 
