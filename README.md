@@ -1,6 +1,6 @@
 <div align="center">
 
-# Hey, I'm Steve 
+# Hey, I'm Steve 👽
 
 ### Builder · AI/Automation Enthusiast · Security-Aware Developer
 
