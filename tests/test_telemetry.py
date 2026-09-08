@@ -15,6 +15,8 @@ from able_to_answer.core.logging import (
     trace_headers,
 )
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
 MANDATORY_FIELDS = {
     "timestamp",
     "level",
@@ -74,12 +76,24 @@ def test_traceparent_parsing_and_generation():
     assert generated["span_id"] != "0" * 16
 
 
-def test_fastapi_middleware_sets_traceparent_response_header_static():
-    source = Path("src/able_to_answer/api/main.py").read_text()
+def test_fastapi_middleware_sets_traceparent_response_header():
+    from fastapi.testclient import TestClient
 
-    assert '@app.middleware("http")' in source
-    assert 'parse_or_generate_traceparent(request.headers.get("traceparent"))' in source
-    assert 'response.headers["traceparent"] = trace_context.traceparent' in source
+    from able_to_answer.api.main import app
+
+    client = TestClient(app)
+
+    # No inbound traceparent -> the middleware generates and returns one.
+    generated = client.get("/health")
+    assert generated.status_code == 200
+    traceparent = generated.headers.get("traceparent")
+    assert traceparent is not None
+    assert traceparent.startswith("00-")
+
+    # Inbound traceparent -> preserved verbatim on the response.
+    inbound = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    echoed = client.get("/health", headers={"traceparent": inbound})
+    assert echoed.headers.get("traceparent") == inbound
 
 
 def test_trace_headers_propagate_request_scoped_context():
@@ -96,7 +110,7 @@ def test_trace_headers_propagate_request_scoped_context():
 
 
 def test_control_plane_dispatch_returns_trace_context_for_downstream_static():
-    source = Path("src/able_to_answer/control_plane/router.py").read_text()
+    source = (REPO_ROOT / "src/able_to_answer/control_plane/router.py").read_text()
 
     assert '"trace_context": trace_headers()' in source
     assert '"task_dispatched"' in source
