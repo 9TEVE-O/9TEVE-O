@@ -38,7 +38,7 @@ I build systems that think, automate, and scale. My work sits at the intersectio
 ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat-square&logo=nodedotjs&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat-square&logo=node.js&logoColor=white)
 ![n8n](https://img.shields.io/badge/n8n-EA4B71?style=flat-square&logo=n8n&logoColor=white)
 
 **Web Performance & Security**
@@ -57,6 +57,12 @@ I build systems that think, automate, and scale. My work sits at the intersectio
 | [**🛡️ ASPRON**](https://github.com/9TEVE-O/ASPRON-) | Browser-based Safe Intake Capsule: risky fields are identified, raw access is blocked, a human approves a redacted copy, and reduced evidence is retained. |
 | [**🔍 AI-Policy-Terms-Analyzer**](https://github.com/9TEVE-O/AI-Policy-Terms-Analyzer) | Python tooling that extracts technical and operational signals from public policies, terms, and privacy pages for human review and structured output. |
 | [**👪 KinSync**](https://github.com/9TEVE-O/KinSync) | Full-stack family-coordination application scaffold with separated web, API, auth, billing, database, and email concerns. |
+
+---
+
+## ✍️ Writing
+
+[**Ending Vibe-Based AI: Building Deterministic Evaluation Gates for Production LLMs**](https://github.com/9TEVE-O/9TEVE-O/blob/main/writing/ending-vibe-based-ai.md) — a practical argument for making the release decision deterministic even when the model is not.
 
 ---
 
