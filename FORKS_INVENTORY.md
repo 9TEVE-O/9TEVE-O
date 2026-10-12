@@ -1,6 +1,6 @@
 # 🍴 Fork Inventory — Memory Bank
 
-> Auto-generated 2026-10-05 14:17 UTC by `scripts/fork_inventory.py`.
+> Auto-generated 2026-10-12 15:05 UTC by `scripts/fork_inventory.py`.
 > Total forks: **139** · Top batch for deep work: **8**
 
 ---
@@ -11,7 +11,7 @@
 | ---- | ---------- | ---- | ------- | ----- | -------- |
 | 🥇 | [9TEVE-O/agent-browser](https://github.com/9TEVE-O/agent-browser) | Unknown | 1 | 7.3/10 | ai, agent, automation |
 | 🥈 | [9TEVE-O/OmniRoute](https://github.com/9TEVE-O/OmniRoute) | Unknown | 1 | 6.3/10 | ai, gpt, copilot |
-| 🥉 | [9TEVE-O/idea-hunt-skill](https://github.com/9TEVE-O/idea-hunt-skill) | Unknown | 0 | 6.0/10 | ai, workflow |
+| 🥉 | [9TEVE-O/idea-hunt-skill](https://github.com/9TEVE-O/idea-hunt-skill) | Python | 0 | 6.0/10 | ai, workflow |
 | #4 | [9TEVE-O/OmniCopilot](https://github.com/9TEVE-O/OmniCopilot) | Unknown | 0 | 6.0/10 | ai, agent, gpt, copilot |
 | #5 | [9TEVE-O/starnet](https://github.com/9TEVE-O/starnet) | Unknown | 0 | 6.0/10 | ai, agent |
 | #6 | [9TEVE-O/checkcle](https://github.com/9TEVE-O/checkcle) | Unknown | 0 | 5.0/10 | ml, full-stack |
@@ -26,7 +26,7 @@
 | - | ---------- | ---- | ------- | --------- | ----- | ------ |
 | 1 | [9TEVE-O/agent-browser](https://github.com/9TEVE-O/agent-browser) | Unknown | 1 | 2026-09-18 | 7.3/10 | — |
 | 2 | [9TEVE-O/OmniRoute](https://github.com/9TEVE-O/OmniRoute) | Unknown | 1 | 2026-09-01 | 6.3/10 | — |
-| 3 | [9TEVE-O/idea-hunt-skill](https://github.com/9TEVE-O/idea-hunt-skill) | Unknown | 0 | 2026-10-04 | 6.0/10 | — |
+| 3 | [9TEVE-O/idea-hunt-skill](https://github.com/9TEVE-O/idea-hunt-skill) | Python | 0 | 2026-10-05 | 6.0/10 | — |
 | 4 | [9TEVE-O/OmniCopilot](https://github.com/9TEVE-O/OmniCopilot) | Unknown | 0 | 2026-09-01 | 6.0/10 | — |
 | 5 | [9TEVE-O/starnet](https://github.com/9TEVE-O/starnet) | Unknown | 0 | 2026-09-23 | 6.0/10 | — |
 | 6 | [9TEVE-O/checkcle](https://github.com/9TEVE-O/checkcle) | Unknown | 0 | 2026-07-17 | 5.0/10 | — |
@@ -39,16 +39,16 @@
 | 13 | [9TEVE-O/tokenminning](https://github.com/9TEVE-O/tokenminning) | Unknown | 0 | 2026-09-16 | 5.0/10 | — |
 | 14 | [9TEVE-O/Understand-Anything](https://github.com/9TEVE-O/Understand-Anything) | Unknown | 0 | 2026-09-12 | 5.0/10 | — |
 | 15 | [9TEVE-O/claude-code](https://github.com/9TEVE-O/claude-code) | Shell | 1 | 2026-07-17 | 4.3/10 | — |
-| 16 | [9TEVE-O/claude-code-templates](https://github.com/9TEVE-O/claude-code-templates) | Python | 1 | 2026-10-05 | 4.3/10 | — |
+| 16 | [9TEVE-O/claude-code-templates](https://github.com/9TEVE-O/claude-code-templates) | Python | 1 | 2026-10-12 | 4.3/10 | — |
 | 17 | [9TEVE-O/MindEase](https://github.com/9TEVE-O/MindEase) | Python | 1 | 2026-07-14 | 4.3/10 | — |
-| 18 | [9TEVE-O/envharness](https://github.com/9TEVE-O/envharness) | Python | 0 | 2026-09-07 | 4.0/10 | — |
-| 19 | [9TEVE-O/kicad-source-mirror](https://github.com/9TEVE-O/kicad-source-mirror) | Unknown | 0 | 2026-09-24 | 4.0/10 | — |
-| 20 | [9TEVE-O/openui](https://github.com/9TEVE-O/openui) | Unknown | 0 | 2026-09-17 | 4.0/10 | — |
-| 21 | [9TEVE-O/goose](https://github.com/9TEVE-O/goose) | Rust | 1 | 2026-04-19 | 3.3/10 | — |
-| 22 | [9TEVE-O/openai-chatkit-starter-app](https://github.com/9TEVE-O/openai-chatkit-starter-app) | TypeScript | 1 | 2026-06-30 | 3.3/10 | — |
-| 23 | [9TEVE-O/awesome-webmcp](https://github.com/9TEVE-O/awesome-webmcp) | Unknown | 0 | 2026-07-16 | 3.0/10 | — |
-| 24 | [9TEVE-O/caveman](https://github.com/9TEVE-O/caveman) | Unknown | 0 | 2026-08-21 | 3.0/10 | — |
-| 25 | [9TEVE-O/deepagents](https://github.com/9TEVE-O/deepagents) | Unknown | 0 | 2026-04-10 | 3.0/10 | — |
+| 18 | [9TEVE-O/kicad-source-mirror](https://github.com/9TEVE-O/kicad-source-mirror) | Unknown | 0 | 2026-09-24 | 4.0/10 | — |
+| 19 | [9TEVE-O/openui](https://github.com/9TEVE-O/openui) | Unknown | 0 | 2026-09-17 | 4.0/10 | — |
+| 20 | [9TEVE-O/goose](https://github.com/9TEVE-O/goose) | Rust | 1 | 2026-04-19 | 3.3/10 | — |
+| 21 | [9TEVE-O/openai-chatkit-starter-app](https://github.com/9TEVE-O/openai-chatkit-starter-app) | TypeScript | 1 | 2026-06-30 | 3.3/10 | — |
+| 22 | [9TEVE-O/awesome-webmcp](https://github.com/9TEVE-O/awesome-webmcp) | Unknown | 0 | 2026-07-16 | 3.0/10 | — |
+| 23 | [9TEVE-O/caveman](https://github.com/9TEVE-O/caveman) | Unknown | 0 | 2026-08-21 | 3.0/10 | — |
+| 24 | [9TEVE-O/deepagents](https://github.com/9TEVE-O/deepagents) | Unknown | 0 | 2026-04-10 | 3.0/10 | — |
+| 25 | [9TEVE-O/envharness](https://github.com/9TEVE-O/envharness) | Python | 0 | 2026-09-07 | 3.0/10 | — |
 | 26 | [9TEVE-O/n8n](https://github.com/9TEVE-O/n8n) | Unknown | 0 | 2026-01-30 | 3.0/10 | — |
 | 27 | [9TEVE-O/open-saas](https://github.com/9TEVE-O/open-saas) | Unknown | 0 | 2026-04-06 | 3.0/10 | — |
 | 28 | [9TEVE-O/optax](https://github.com/9TEVE-O/optax) | Unknown | 0 | 2026-07-22 | 3.0/10 | — |
